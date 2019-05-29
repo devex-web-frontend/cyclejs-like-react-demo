@@ -1,7 +1,8 @@
-import { Component, K, pipe } from '../utils';
+import { Component, K, view } from '../utils';
 import { Input } from './input.component';
 import * as React from 'react';
-import { merge, snapshot } from '@most/core';
+import { merge } from '@most/core';
+import { Lens } from 'monocle-ts';
 
 export type FormValue = {
 	firstName: string;
@@ -17,11 +18,14 @@ type Sink = {
 };
 
 export const Form: Component<Props, Sink> = props => {
+	const firstNameView = view(props.value, Lens.fromProp('firstName'));
+	const lastNameView = view(props.value, Lens.fromProp('lastName'));
+
 	const firstName = Input({
-		value: K(props.value, v => v.firstName),
+		value: firstNameView.source,
 	});
 	const lastName = Input({
-		value: K(props.value, v => v.lastName),
+		value: lastNameView.source,
 	});
 
 	const vdom = K(firstName.vdom, lastName.vdom, (firstName, lastName) => (
@@ -31,16 +35,7 @@ export const Form: Component<Props, Sink> = props => {
 		</div>
 	));
 
-	const value = merge(
-		pipe(
-			firstName.value,
-			snapshot((value, firstName) => ({ ...value, firstName }), props.value),
-		),
-		pipe(
-			lastName.value,
-			snapshot((value, lastName) => ({ ...value, lastName }), props.value),
-		),
-	);
+	const value = merge(firstNameView.set(firstName.value), lastNameView.set(lastName.value));
 
 	return {
 		vdom,

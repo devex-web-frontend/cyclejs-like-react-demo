@@ -1,6 +1,7 @@
 import { Form, FormValue } from './form.component';
-import { Component, createValue, Empty, K, pipe } from '../utils';
-import { snapshot } from '@most/core';
+import { Component, createValue, Empty, K, pipe, view } from '../utils';
+import { map } from '@most/core';
+import { Lens } from 'monocle-ts';
 
 type State = {
 	formValue: FormValue;
@@ -18,13 +19,15 @@ export const App: Component<Empty, Sink> = () => {
 		},
 	});
 
+	const formValueView = view(state, Lens.fromProp('formValue'));
+
 	const form = Form({
-		value: K(state, state => state.formValue),
+		value: formValueView.source,
 	});
 
 	const effect = pipe(
-		form.value,
-		snapshot((state, formValue) => setState({ ...state, formValue }), state),
+		formValueView.set(form.value),
+		map(setState),
 	);
 
 	return {

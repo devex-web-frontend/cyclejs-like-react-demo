@@ -1,13 +1,14 @@
 import { pipe as fptsPipe } from 'fp-ts/lib/function';
 import { Scheduler, Sink, Stream } from '@most/types';
 import { ComponentType, memo, ReactElement, useEffect, useMemo, useState } from 'react';
-import { combineArray, merge, skipRepeats, startWith, tap } from '@most/core';
+import { combineArray, merge, skipRepeats, snapshot, startWith, tap } from '@most/core';
 import {
 	ProductMap,
 	ProjectMany,
 } from '@devexperts/utils/dist/typeclasses/product-left-coproduct-left/product-left-coproduct-left.utils';
 import { createAdapter } from '@most/adapter/dist';
 import { hold } from '@most/hold';
+import { Lens } from 'monocle-ts';
 
 type Streamify<O extends object> = { [K in keyof O]: Stream<O[K]> };
 type Output = {
@@ -125,3 +126,14 @@ export function pipe<A>(fa: A, ...operators: Array<(a: any) => any>): any {
 	}
 	return fptsPipe.apply(null, operators as any)(fa);
 }
+
+type Lensed<Source, Sink> = {
+	source: Stream<Source>;
+	set: (s: Stream<Source>) => Stream<Sink>;
+};
+export const view = <A, B>(a: Stream<A>, lens: Lens<A, B>): Lensed<B, A> => {
+	return {
+		source: K(a, lens.get),
+		set: snapshot((a, b) => lens.set(b)(a), a),
+	};
+};
