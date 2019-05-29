@@ -1,0 +1,14 @@
+{
+  "extends": ["@devexperts/lint/tslint.json"],
+  "linterOptions": {
+    "exclude": [
+      ".storybook/**/*.js",
+      "node_modules/**/*.ts"
+    ]
+  },
+  "rules": {
+    "no-unused-variable": true
+  }
+}
+
+
