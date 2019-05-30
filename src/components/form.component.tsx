@@ -22,10 +22,10 @@ export const Form: Component<Props, Sink> = props => {
 	const lastNameView = view(props.value, Lens.fromProp('lastName'));
 
 	const firstName = Input({
-		value: firstNameView.source,
+		value: firstNameView.value,
 	});
 	const lastName = Input({
-		value: lastNameView.source,
+		value: lastNameView.value,
 	});
 
 	const vdom = K(firstName.vdom, lastName.vdom, (firstName, lastName) => (

@@ -22,7 +22,7 @@ export const App: Component<Empty, Sink> = () => {
 	const formValueView = view(state, Lens.fromProp('formValue'));
 
 	const form = Form({
-		value: formValueView.source,
+		value: formValueView.value,
 	});
 
 	const effect = pipe(

@@ -127,13 +127,11 @@ export function pipe<A>(fa: A, ...operators: Array<(a: any) => any>): any {
 	return fptsPipe.apply(null, operators as any)(fa);
 }
 
-type Lensed<Source, Sink> = {
-	source: Stream<Source>;
-	set: (s: Stream<Source>) => Stream<Sink>;
+type Lensed<S, A> = {
+	value: A;
+	set: (s: A) => S;
 };
-export const view = <A, B>(a: Stream<A>, lens: Lens<A, B>): Lensed<B, A> => {
-	return {
-		source: K(a, lens.get),
-		set: snapshot((a, b) => lens.set(b)(a), a),
-	};
-};
+export const view = <S, A>(a: Stream<S>, lens: Lens<S, A>): Lensed<Stream<S>, Stream<A>> => ({
+	value: K(a, lens.get),
+	set: snapshot((a, b) => lens.set(b)(a), a),
+});
