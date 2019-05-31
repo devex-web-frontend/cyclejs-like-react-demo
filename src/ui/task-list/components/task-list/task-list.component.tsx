@@ -1,5 +1,4 @@
 import { Component, createValue, Empty, K, pipe } from '../../../../utils';
-import { map, mergeArray } from '@most/core';
 
 import 'todomvc-common/base.css';
 import 'todomvc-app-css/index.css';
@@ -8,6 +7,8 @@ import { Header } from '../header/header.component';
 import { Main } from '../main/main.component';
 import { Footer } from '../footer/footer.component';
 import { TaskValue } from '../../../task/components/task/task.component';
+import { map } from 'rxjs/operators';
+import { merge } from 'rxjs';
 
 type Sink = {
 	effect: void;
@@ -48,7 +49,7 @@ export const TaskList: Component<Empty, Sink> = () => {
 		map(setTasks),
 	);
 
-	const effect = mergeArray([tasksEffect]);
+	const effect = merge(tasksEffect);
 
 	return {
 		vdom,

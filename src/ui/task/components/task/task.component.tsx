@@ -1,12 +1,11 @@
-import { K, pipe, Streamify, reduce, mapTo, TargetKeyboardEvent, voidSink, log } from '../../../../utils';
+import { K, pipe, Observify, reduce, TargetKeyboardEvent, createHandler } from '../../../../utils';
 import * as React from 'react';
 import cx from 'classnames';
-import { createAdapter } from '@most/adapter/dist';
 import { ChangeEvent, createRef, FocusEvent, MouseEvent } from 'react';
 import { compose, constVoid } from 'fp-ts/lib/function';
-import { filter, map, merge } from '@most/core';
 import { Lens } from 'monocle-ts';
-import { Stream } from '@most/types';
+import { filter, map, mapTo } from 'rxjs/operators';
+import { merge, Observable } from 'rxjs';
 
 const ESC_KEY = 27;
 const ENTER_KEY = 13;
@@ -25,13 +24,13 @@ type Props = {
 	value: TaskValue;
 };
 
-export const Task = (props: Streamify<Props>) => {
+export const Task = (props: Observify<Props>) => {
 	const editInputRef = createRef<HTMLInputElement>();
-	const [handleDestroyClick, destroyClickEvent] = createAdapter<MouseEvent<HTMLButtonElement>>();
-	const [handleToggleChange, toggleChangeEvent] = createAdapter<ChangeEvent<HTMLInputElement>>();
-	const [handleTitleDoubleClick, titleDoubleClick] = createAdapter<MouseEvent<HTMLLabelElement>>();
-	const [handleEditKeyUp, editKeyUpEvent] = createAdapter<TargetKeyboardEvent<HTMLInputElement>>();
-	const [handleEditBlur, editBlurEvent] = createAdapter<FocusEvent<HTMLInputElement>>();
+	const [handleDestroyClick, destroyClickEvent] = createHandler<MouseEvent<HTMLButtonElement>>();
+	const [handleToggleChange, toggleChangeEvent] = createHandler<ChangeEvent<HTMLInputElement>>();
+	const [handleTitleDoubleClick, titleDoubleClick] = createHandler<MouseEvent<HTMLLabelElement>>();
+	const [handleEditKeyUp, editKeyUpEvent] = createHandler<TargetKeyboardEvent<HTMLInputElement>>();
+	const [handleEditBlur, editBlurEvent] = createHandler<FocusEvent<HTMLInputElement>>();
 
 	const vdom = K(props.value, ({ title, completed, editing }) => {
 		const todoRootClassName = cx('todoRoot', {
@@ -62,7 +61,7 @@ export const Task = (props: Streamify<Props>) => {
 		map(constVoid),
 	);
 
-	const value: Stream<TaskValue> = reduce(
+	const value: Observable<TaskValue> = reduce(
 		props.value,
 		pipe(
 			titleDoubleClick,
@@ -78,7 +77,7 @@ export const Task = (props: Streamify<Props>) => {
 			map(completedLens.set),
 		),
 		pipe(
-			K(merge(filter(e => e.keyCode === ENTER_KEY, editKeyUpEvent), editBlurEvent), e => e.target.value),
+			K(merge(editKeyUpEvent.pipe(filter(e => e.keyCode === ENTER_KEY)), editBlurEvent), e => e.target.value),
 			map(value =>
 				compose(
 					editingLens.set(false),

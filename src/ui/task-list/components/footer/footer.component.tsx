@@ -1,9 +1,9 @@
 import { Component } from '../../../../utils';
-import { now } from '@most/core';
 import * as React from 'react';
+import { of } from 'rxjs';
 
 export const Footer: Component = () => {
-	const vdom = now(
+	const vdom = of(
 		<footer className="footer">
 			<span className="todo-count">
 				<strong>0</strong> item left

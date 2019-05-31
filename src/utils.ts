@@ -1,95 +1,79 @@
-import { constant, Endomorphism, pipe as fptsPipe, Predicate, Refinement } from 'fp-ts/lib/function';
-import { Scheduler, Sink, Stream } from '@most/types';
+import { Endomorphism, pipe as fptsPipe } from 'fp-ts/lib/function';
 import { ComponentType, KeyboardEvent, memo, ReactElement, useEffect, useMemo, useState } from 'react';
-import {
-	combineArray,
-	filter as mostFilter,
-	map,
-	merge,
-	mergeArray,
-	skipRepeats,
-	snapshot,
-	startWith,
-	tap,
-} from '@most/core';
+
 import {
 	ProductMap,
 	ProjectMany,
 } from '@devexperts/utils/dist/typeclasses/product-left-coproduct-left/product-left-coproduct-left.utils';
-import { createAdapter } from '@most/adapter/dist';
-import { hold } from '@most/hold';
 import { Lens } from 'monocle-ts';
 import { isSome, Option } from 'fp-ts/lib/Option';
-import { newDefaultScheduler } from '@most/scheduler';
+import { BehaviorSubject, combineLatest, merge, Observable, OperatorFunction, Subject } from 'rxjs';
+import { distinctUntilChanged, filter, map, tap, withLatestFrom } from 'rxjs/operators';
 
-export type Streamify<O extends object> = { [K in keyof O]: Stream<O[K]> };
-type Output = {
-	vdom: Stream<ReactElement>;
-};
+export type Observify<O extends object> = { [K in keyof O]: Observable<O[K]> };
+type Output = Observify<{
+	vdom: ReactElement;
+}>;
 export type Empty = Record<string, never>;
 
 export type Component<Inputs extends object = Empty, Outputs extends object = Empty> = Inputs extends Empty
-	? () => Outputs extends Empty ? Output : Output & Streamify<Outputs>
-	: (inputs: Streamify<Inputs>) => Outputs extends Empty ? Output : Output & Streamify<Outputs>;
+	? () => Outputs extends Empty ? Output : Output & Observify<Outputs>
+	: (inputs: Observify<Inputs>) => Outputs extends Empty ? Output : Output & Observify<Outputs>;
 
-export const voidSink: Sink<void> = {
-	event: () => undefined,
-	end: () => undefined,
-	error: (time, err) => {
-		throw err;
-	},
-};
-const runStream = (stream: Stream<unknown>, scheduler: Scheduler) => stream.run(voidSink, scheduler);
+export const log = (...args: unknown[]) => <A>(fa: Observable<A>): Observable<A> =>
+	fa.pipe(tap(a => console.log(a, ...args)));
+export const reduce = <A>(a: Observable<A>, ...reducers: Observable<Endomorphism<A>>[]): Observable<A> =>
+	merge(...reducers).pipe(
+		withLatestFrom(a),
+		map(([reducer, a]) => reducer(a)),
+	);
 
-export type MostOperator<A, B> = (fa: Stream<A>) => Stream<B>;
-export type MonotypeMostOperator<A> = MostOperator<A, A>;
-
-export const log = (...args: unknown[]) => <A>(fa: Stream<A>): Stream<A> => tap(a => console.log(a, ...args))(fa);
-export const reduce = <A>(a: Stream<A>, ...reducers: Stream<Endomorphism<A>>[]): Stream<A> =>
-	snapshot((a, reducer) => reducer(a), a, mergeArray(reducers));
-export const mapTo = <A>(a: A): MostOperator<unknown, A> => map(constant(a));
-export function filter<A, B extends A>(r: Refinement<A, B>): MostOperator<A, B>;
-export function filter<A>(r: Predicate<A>): MonotypeMostOperator<A>;
-export function filter<A>(r: Predicate<A>): MonotypeMostOperator<A> {
-	return fa => mostFilter(r, fa) as any;
-}
-export const filterMap = <A, B>(f: (a: A) => Option<B>): MostOperator<A, B> => fa =>
-	pipe(
-		fa,
+export const filterMap = <A, B>(f: (a: A) => Option<B>): OperatorFunction<A, B> => fa =>
+	fa.pipe(
 		map(f),
 		filter(isSome),
 		map(option => option.value),
 	);
 
-export function toReactComponent(
-	component: Component<Empty, { effect: void }>,
-): ComponentType<{ scheduler: Scheduler }> {
-	return memo(props => {
+export function toReactComponent(component: Component<Empty, { effect: void }>): ComponentType {
+	return memo(() => {
 		const c = useMemo(() => component(), []);
 		const [state, setState] = useState<ReactElement>();
 		useEffect(() => {
-			const disposable = runStream(merge(tap(setState, c.vdom), c.effect), props.scheduler);
-			return () => disposable.dispose();
-		}, [props.scheduler, c]);
+			const subscription = merge(c.vdom.pipe(tap(setState)), c.effect).subscribe();
+			return () => subscription.unsubscribe();
+		}, [c]);
 		return state || null;
 	});
 }
 
 declare module 'fp-ts/lib/HKT' {
 	interface URI2HKT2<L, A> {
-		Stream: Stream<A>;
+		Observable: Observable<A>;
 	}
 }
 
-export const K: ProductMap<'Stream'> = <A, R>(...args: Array<Stream<A> | ProjectMany<A, R>>): Stream<R> => {
-	const streams = args.slice(0, -1) as Stream<A>[];
+export const K: ProductMap<'Observable'> = <A, R>(...args: Array<Observable<A> | ProjectMany<A, R>>): Observable<R> => {
+	const streams = args.slice(0, -1) as Observable<A>[];
 	const project = args[args.length - 1] as ProjectMany<A, R>;
-	return skipRepeats(combineArray(project, streams));
+	return combineLatest(streams).pipe(
+		map(args => project(...args)),
+		distinctUntilChanged(),
+	);
 };
 
-export const createValue = <A>(initial: A): [(a: A) => void, Stream<A>] => {
-	const [next, local] = createAdapter<A>();
-	return [next, hold(skipRepeats(startWith(initial, local)))];
+export const createHandler = <A = never>(): [(a: A) => void, Observable<A>] => {
+	const s = new Subject<A>();
+	const next = (a: A) => s.next(a);
+	const a = s.asObservable();
+	return [next, a];
+};
+
+export const createValue = <A>(initial: A): [(a: A) => void, Observable<A>] => {
+	const s = new BehaviorSubject(initial);
+	const next = (a: A) => s.next(a);
+	const a = s.pipe(distinctUntilChanged());
+	return [next, a];
 };
 
 export function pipe<A, B>(fa: A, ab: (a: A) => B): B;
@@ -162,9 +146,14 @@ type Lensed<S, A> = {
 	value: A;
 	set: (s: A) => S;
 };
-export const view = <S, A>(a: Stream<S>, lens: Lens<S, A>): Lensed<Stream<S>, Stream<A>> => ({
-	value: K(a, lens.get),
-	set: snapshot((a, b) => lens.set(b)(a), a),
+export const view = <S, A>(s: Observable<S>, lens: Lens<S, A>): Lensed<Observable<S>, Observable<A>> => ({
+	value: K(s, lens.get),
+	set: a =>
+		a.pipe(
+			withLatestFrom(s),
+			map(([a, s]) => lens.set(a)(s)),
+			distinctUntilChanged(),
+		),
 });
 
 export interface TargetKeyboardEvent<T = Element> extends KeyboardEvent<T> {

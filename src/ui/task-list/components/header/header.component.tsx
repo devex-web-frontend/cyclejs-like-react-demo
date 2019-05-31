@@ -1,9 +1,9 @@
 import { Component } from '../../../../utils';
-import { now } from '@most/core';
 import * as React from 'react';
+import { of } from 'rxjs';
 
 export const Header: Component = () => {
-	const vdom = now(
+	const vdom = of(
 		<header className={'header'}>
 			<h1 className={'todos'}>todos</h1>
 			<input

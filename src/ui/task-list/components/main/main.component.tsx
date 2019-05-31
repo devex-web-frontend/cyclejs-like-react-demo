@@ -1,29 +1,13 @@
-import { filterMap, K, log, pipe, reduce, Streamify, voidSink } from '../../../../utils';
-import {
-	chain,
-	combineArray,
-	empty,
-	filter,
-	map,
-	mergeArray,
-	multicast,
-	now,
-	scan,
-	skipRepeats,
-	snapshot,
-	startWith,
-	switchLatest,
-} from '@most/core';
+import { filterMap, K, log, pipe, reduce, Observify } from '../../../../utils';
 import * as React from 'react';
 import { randomId } from '@devexperts/utils/dist/string';
 import { Task, TaskValue } from '../../../task/components/task/task.component';
 import { Fragment } from 'react';
-import { hold } from '@most/hold';
 import { none, some } from 'fp-ts/lib/Option';
-import { newDefaultScheduler } from '@most/scheduler';
-import { constVoid, Endomorphism } from 'fp-ts/lib/function';
 import { unsafeUpdateAt } from 'fp-ts/lib/Array';
-import { Stream } from '@most/types';
+import { map, mergeMap, scan, startWith, switchMap } from 'rxjs/operators';
+import { combineLatest, Observable } from 'rxjs';
+import { Endomorphism } from 'fp-ts/lib/function';
 
 type Props = {
 	tasks: TaskValue[];
@@ -31,12 +15,10 @@ type Props = {
 
 const itemKey = (task: TaskValue, i: number): string => `${i}`;
 
-export const Main = (props: Streamify<Props>) => {
+export const Main = (props: Observify<Props>) => {
 	const toggleAllId = randomId('toggle-all-');
 
-	const tasks = pipe(
-		props.tasks,
-		skipRepeats,
+	const tasks = props.tasks.pipe(
 		scan<TaskValue[], { dict: Map<string, ReturnType<typeof Task>>; arr: Array<ReturnType<typeof Task>> }>(
 			(acc, nextState) => {
 				const { dict } = acc;
@@ -50,8 +32,7 @@ export const Main = (props: Streamify<Props>) => {
 					const existing = dict.get(key);
 					if (typeof existing === 'undefined') {
 						const child = Task({
-							value: pipe(
-								props.tasks,
+							value: props.tasks.pipe(
 								startWith(nextState),
 								filterMap(tasks => {
 									for (let i = 0, n = tasks.length; i < n; i++) {
@@ -64,7 +45,7 @@ export const Main = (props: Streamify<Props>) => {
 								}),
 							),
 						});
-						const vdom = map(vdom => <Fragment key={key}>{vdom}</Fragment>, child.vdom);
+						const vdom = child.vdom.pipe(map(vdom => <Fragment key={key}>{vdom}</Fragment>));
 						const task = {
 							...child,
 							vdom,
@@ -89,51 +70,26 @@ export const Main = (props: Streamify<Props>) => {
 			},
 			{ dict: new Map(), arr: [] },
 		),
-		// multicast,
 	);
 
-	const tasksVDom = pipe(
-		tasks,
-		map(tasks => combineArray((...vdoms) => <Fragment>{vdoms}</Fragment>, tasks.arr.map(task => task.vdom))),
-		switchLatest,
+	const tasksVDom = tasks.pipe(
+		switchMap(tasks => combineLatest(tasks.arr.map(task => task.vdom))),
+		map(vdoms => <Fragment>{vdoms}</Fragment>),
 	);
 
-	const tasksValue: Stream<TaskValue[]> = pipe(
+	const tasksValue: Observable<TaskValue[]> = pipe(
 		tasks,
-		chain(tasks => {
-			console.log('tasks', tasks);
-			return multicast(
-				mergeArray(
-					tasks.arr.map((task, i) => {
-						console.log('snapshotting', task, i);
-						return snapshot(
-							(tasks, task) => {
-								console.log('FOO', tasks, task, i);
-								return unsafeUpdateAt(i, task, tasks);
-							},
-							props.tasks,
-							task.value,
-						);
-					}),
+		mergeMap(tasks =>
+			reduce(
+				props.tasks,
+				...tasks.arr.map((task, i) =>
+					pipe(
+						task.value,
+						map<TaskValue, Endomorphism<TaskValue[]>>(value => tasks => unsafeUpdateAt(i, value, tasks)),
+					),
 				),
-			);
-		}),
-		// chain(tasks => {
-		// 	return reduce(
-		// 		props.tasks,
-		// 		...tasks.arr.map((task, i) =>
-		// 			pipe(
-		// 				task.value,
-		// 				log('task value', i),
-		// 				map<TaskValue, Endomorphism<TaskValue[]>>(value => tasks => {
-		// 					console.log('updating', i, value, tasks);
-		// 					return unsafeUpdateAt(i, value, tasks);
-		// 				}),
-		// 			),
-		// 		),
-		// 	);
-		// }),
-		log('tasks2'),
+			),
+		),
 	);
 
 	const vdom = K(tasksVDom, tasksVdom => (
@@ -143,6 +99,7 @@ export const Main = (props: Streamify<Props>) => {
 			<ul className="todo-list">{tasksVdom}</ul>
 		</section>
 	));
+
 	return {
 		vdom,
 		value: tasksValue,
