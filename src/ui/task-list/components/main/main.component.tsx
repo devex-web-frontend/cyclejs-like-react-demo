@@ -1,4 +1,4 @@
-import { filterMap, K, pipe, reduce, Observify, createHandler } from '../../../../utils';
+import { filterMap, K, pipe, reduce, Observify, createHandler, log } from '../../../../utils';
 import * as React from 'react';
 import { randomId } from '@devexperts/utils/dist/string';
 import { Task, TaskValue } from '../../../task/components/task/task.component';
@@ -6,7 +6,7 @@ import { ChangeEvent, Fragment } from 'react';
 import { none, some } from 'fp-ts/lib/Option';
 import { unsafeDeleteAt, unsafeUpdateAt } from 'fp-ts/lib/Array';
 import { map, mergeMap, scan, startWith, switchMap } from 'rxjs/operators';
-import { combineLatest, merge, Observable } from 'rxjs';
+import { combineLatest, merge, Observable, of } from 'rxjs';
 import { Endomorphism } from 'fp-ts/lib/function';
 
 type Props = {
@@ -27,7 +27,7 @@ export const Main = (props: Observify<Props>) => {
 				const nextKeys = new Set<string>();
 
 				// add
-				for (let i = 0, n = nextState.length; i < n; ++i) {
+				for (let i = 0, n = nextState.length; i < n; i++) {
 					const key = itemKey(nextState[i], i);
 					nextKeys.add(key);
 					const existing = dict.get(key);
@@ -79,7 +79,7 @@ export const Main = (props: Observify<Props>) => {
 
 	const tasksValue: Observable<TaskValue[]> = pipe(
 		tasks,
-		mergeMap(tasks =>
+		switchMap(tasks =>
 			reduce(
 				props.tasks,
 				...tasks.arr.map((task, i) =>
