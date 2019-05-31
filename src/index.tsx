@@ -1,5 +1,5 @@
 import { toReactComponent } from './utils';
-import { App } from './components/app.component';
+import { App } from './ui/task-list/components/task-list/task-list.component';
 import { newDefaultScheduler } from '@most/scheduler';
 import { render } from 'react-dom';
 import * as React from 'react';

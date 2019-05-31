@@ -1,7 +1,17 @@
-import { pipe as fptsPipe } from 'fp-ts/lib/function';
+import { constant, Endomorphism, pipe as fptsPipe, Predicate, Refinement } from 'fp-ts/lib/function';
 import { Scheduler, Sink, Stream } from '@most/types';
-import { ComponentType, memo, ReactElement, useEffect, useMemo, useState } from 'react';
-import { combineArray, merge, skipRepeats, snapshot, startWith, tap } from '@most/core';
+import { ComponentType, KeyboardEvent, memo, ReactElement, useEffect, useMemo, useState } from 'react';
+import {
+	combineArray,
+	filter as mostFilter,
+	map,
+	merge,
+	mergeArray,
+	skipRepeats,
+	snapshot,
+	startWith,
+	tap,
+} from '@most/core';
 import {
 	ProductMap,
 	ProjectMany,
@@ -9,8 +19,10 @@ import {
 import { createAdapter } from '@most/adapter/dist';
 import { hold } from '@most/hold';
 import { Lens } from 'monocle-ts';
+import { isSome, Option } from 'fp-ts/lib/Option';
+import { newDefaultScheduler } from '@most/scheduler';
 
-type Streamify<O extends object> = { [K in keyof O]: Stream<O[K]> };
+export type Streamify<O extends object> = { [K in keyof O]: Stream<O[K]> };
 type Output = {
 	vdom: Stream<ReactElement>;
 };
@@ -20,7 +32,7 @@ export type Component<Inputs extends object = Empty, Outputs extends object = Em
 	? () => Outputs extends Empty ? Output : Output & Streamify<Outputs>
 	: (inputs: Streamify<Inputs>) => Outputs extends Empty ? Output : Output & Streamify<Outputs>;
 
-const voidSink: Sink<void> = {
+export const voidSink: Sink<void> = {
 	event: () => undefined,
 	end: () => undefined,
 	error: (time, err) => {
@@ -28,7 +40,27 @@ const voidSink: Sink<void> = {
 	},
 };
 const runStream = (stream: Stream<unknown>, scheduler: Scheduler) => stream.run(voidSink, scheduler);
-export const log = (...args: unknown[]) => <A>(s: Stream<A>): Stream<A> => tap(a => console.log(a, ...args), s);
+export const debugStream = (stream: Stream<unknown>) => runStream(stream, newDefaultScheduler());
+
+export type MostOperator<A, B> = (fa: Stream<A>) => Stream<B>;
+export type MonotypeMostOperator<A> = MostOperator<A, A>;
+
+export const log = (...args: unknown[]) => <A>(fa: Stream<A>): Stream<A> => tap(a => console.log(a, ...args))(fa);
+export const reduce = <A>(a: Stream<A>, ...reducers: Stream<Endomorphism<A>>[]): Stream<A> =>
+	snapshot((a, reducer) => reducer(a), a, mergeArray(reducers));
+export const mapTo = <A>(a: A): MostOperator<unknown, A> => map(constant(a));
+export function filter<A, B extends A>(r: Refinement<A, B>): MostOperator<A, B>;
+export function filter<A>(r: Predicate<A>): MonotypeMostOperator<A>;
+export function filter<A>(r: Predicate<A>): MonotypeMostOperator<A> {
+	return fa => mostFilter(r, fa) as any;
+}
+export const filterMap = <A, B>(f: (a: A) => Option<B>): MostOperator<A, B> => fa =>
+	pipe(
+		fa,
+		map(f),
+		filter(isSome),
+		map(option => option.value),
+	);
 
 export function toReactComponent(
 	component: Component<Empty, { effect: void }>,
@@ -135,3 +167,7 @@ export const view = <S, A>(a: Stream<S>, lens: Lens<S, A>): Lensed<Stream<S>, St
 	value: K(a, lens.get),
 	set: snapshot((a, b) => lens.set(b)(a), a),
 });
+
+export interface TargetKeyboardEvent<T = Element> extends KeyboardEvent<T> {
+	target: EventTarget & T;
+}
