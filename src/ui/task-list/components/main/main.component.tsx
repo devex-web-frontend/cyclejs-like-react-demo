@@ -1,12 +1,12 @@
-import { filterMap, K, log, pipe, reduce, Observify } from '../../../../utils';
+import { filterMap, K, pipe, reduce, Observify, createHandler } from '../../../../utils';
 import * as React from 'react';
 import { randomId } from '@devexperts/utils/dist/string';
 import { Task, TaskValue } from '../../../task/components/task/task.component';
-import { Fragment } from 'react';
+import { ChangeEvent, Fragment } from 'react';
 import { none, some } from 'fp-ts/lib/Option';
 import { unsafeUpdateAt } from 'fp-ts/lib/Array';
 import { map, mergeMap, scan, startWith, switchMap } from 'rxjs/operators';
-import { combineLatest, Observable } from 'rxjs';
+import { combineLatest, merge, Observable } from 'rxjs';
 import { Endomorphism } from 'fp-ts/lib/function';
 
 type Props = {
@@ -17,6 +17,7 @@ const itemKey = (task: TaskValue, i: number): string => `${i}`;
 
 export const Main = (props: Observify<Props>) => {
 	const toggleAllId = randomId('toggle-all-');
+	const [handleToggleAllChange, toggleAllChangeEvent] = createHandler<ChangeEvent<HTMLInputElement>>();
 
 	const tasks = props.tasks.pipe(
 		scan<TaskValue[], { dict: Map<string, ReturnType<typeof Task>>; arr: Array<ReturnType<typeof Task>> }>(
@@ -94,14 +95,24 @@ export const Main = (props: Observify<Props>) => {
 
 	const vdom = K(tasksVDom, tasksVdom => (
 		<section className={'main'}>
-			<input type="checkbox" className={'toggle-all'} id={toggleAllId} />
+			<input type="checkbox" className={'toggle-all'} id={toggleAllId} onChange={handleToggleAllChange} />
 			<label htmlFor={toggleAllId}>Mark all as comlete</label>
 			<ul className="todo-list">{tasksVdom}</ul>
 		</section>
 	));
 
+	const value: Observable<TaskValue[]> = merge(
+		tasksValue,
+		reduce(
+			props.tasks,
+			K(toggleAllChangeEvent, e => e.target.checked).pipe(
+				map(completed => tasks => tasks.map(task => ({ ...task, completed }))),
+			),
+		),
+	);
+
 	return {
 		vdom,
-		value: tasksValue,
+		value,
 	};
 };
