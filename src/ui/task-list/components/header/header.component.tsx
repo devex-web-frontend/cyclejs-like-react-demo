@@ -1,9 +1,10 @@
-import { createHandler, Observify, reduce, TargetKeyboardEvent } from '../../../../utils';
+import { createHandler, filterMap, Observify, reduce, TargetKeyboardEvent } from '../../../../utils';
 import * as React from 'react';
 import { of } from 'rxjs';
 import { TaskValue } from '../../../task/components/task/task.component';
 import { filter, map } from 'rxjs/operators';
 import { cons } from 'fp-ts/lib/Array';
+import { none, some } from 'fp-ts/lib/Option';
 
 type Props = {
 	tasks: TaskValue[];
@@ -30,10 +31,13 @@ export const Header = (props: Observify<Props>) => {
 		props.tasks,
 		newKeyUpEvent.pipe(
 			filter(e => e.keyCode === 13),
-			map(e => {
-				const value = e.target.value;
-				e.target.value = '';
-				return value;
+			filterMap(e => {
+				const value = e.target.value.trim();
+				if (value !== '') {
+					e.target.value = '';
+					return some(value);
+				}
+				return none;
 			}),
 			map(title => s => cons({ title, editing: false, completed: false }, s)),
 		),

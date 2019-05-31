@@ -4,7 +4,7 @@ import { randomId } from '@devexperts/utils/dist/string';
 import { Task, TaskValue } from '../../../task/components/task/task.component';
 import { ChangeEvent, Fragment } from 'react';
 import { none, some } from 'fp-ts/lib/Option';
-import { unsafeUpdateAt } from 'fp-ts/lib/Array';
+import { unsafeDeleteAt, unsafeUpdateAt } from 'fp-ts/lib/Array';
 import { map, mergeMap, scan, startWith, switchMap } from 'rxjs/operators';
 import { combineLatest, merge, Observable } from 'rxjs';
 import { Endomorphism } from 'fp-ts/lib/function';
@@ -87,6 +87,12 @@ export const Main = (props: Observify<Props>) => {
 					pipe(
 						task.value,
 						map<TaskValue, Endomorphism<TaskValue[]>>(value => tasks => unsafeUpdateAt(i, value, tasks)),
+					),
+				),
+				...tasks.arr.map((task, i) =>
+					pipe(
+						task.destroy,
+						map<void, Endomorphism<TaskValue[]>>(() => tasks => unsafeDeleteAt(i, tasks)),
 					),
 				),
 			),
