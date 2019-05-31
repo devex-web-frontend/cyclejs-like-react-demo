@@ -4,7 +4,7 @@ import cx from 'classnames';
 import { ChangeEvent, createRef, FocusEvent, MouseEvent } from 'react';
 import { compose, constVoid } from 'fp-ts/lib/function';
 import { Lens } from 'monocle-ts';
-import { filter, map, mapTo } from 'rxjs/operators';
+import { distinctUntilChanged, filter, map, mapTo } from 'rxjs/operators';
 import { merge, Observable } from 'rxjs';
 
 const ESC_KEY = 27;
@@ -63,21 +63,19 @@ export const Task = (props: Observify<Props>) => {
 
 	const value: Observable<TaskValue> = reduce(
 		props.value,
-		pipe(
-			titleDoubleClick,
-			mapTo(editingLens.set(true)),
-		),
-		pipe(
-			editKeyUpEvent,
+		titleDoubleClick.pipe(mapTo(editingLens.set(true))),
+		editKeyUpEvent.pipe(
 			filter(e => e.keyCode === ESC_KEY),
 			mapTo(editingLens.set(true)),
 		),
-		pipe(
-			K(toggleChangeEvent, e => e.target.checked),
+		toggleChangeEvent.pipe(
+			map(e => e.target.checked),
+			distinctUntilChanged(),
 			map(completedLens.set),
 		),
-		pipe(
-			K(merge(editKeyUpEvent.pipe(filter(e => e.keyCode === ENTER_KEY)), editBlurEvent), e => e.target.value),
+		merge(editKeyUpEvent.pipe(filter(e => e.keyCode === ENTER_KEY)), editBlurEvent).pipe(
+			map(e => e.target.value),
+			distinctUntilChanged(),
 			map(value =>
 				compose(
 					editingLens.set(false),

@@ -1,4 +1,4 @@
-import { Component, createValue, Empty, K, pipe } from '../../../../utils';
+import { Component, createValue, Empty, K } from '../../../../utils';
 
 import 'todomvc-common/base.css';
 import 'todomvc-app-css/index.css';
@@ -14,7 +14,7 @@ type Sink = {
 	effect: void;
 };
 
-const tasks: TaskValue[] = [
+const TASKS: TaskValue[] = [
 	{
 		completed: false,
 		editing: false,
@@ -28,12 +28,14 @@ const tasks: TaskValue[] = [
 ];
 
 export const TaskList: Component<Empty, Sink> = () => {
-	const [setTasks, tasksValue] = createValue(tasks);
+	const [setTasks, tasks] = createValue(TASKS);
 
-	const header = Header();
+	const header = Header({
+		tasks,
+	});
 
 	const main = Main({
-		tasks: tasksValue,
+		tasks,
 	});
 	const footer = Footer();
 	const vdom = K(header.vdom, main.vdom, footer.vdom, (header, main, footer) => (
@@ -44,10 +46,7 @@ export const TaskList: Component<Empty, Sink> = () => {
 		</div>
 	));
 
-	const tasksEffect = pipe(
-		main.value,
-		map(setTasks),
-	);
+	const tasksEffect = merge(main.value, header.value).pipe(map(setTasks));
 
 	const effect = merge(tasksEffect);
 
