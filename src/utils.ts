@@ -40,7 +40,6 @@ export const voidSink: Sink<void> = {
 	},
 };
 const runStream = (stream: Stream<unknown>, scheduler: Scheduler) => stream.run(voidSink, scheduler);
-export const debugStream = (stream: Stream<unknown>) => runStream(stream, newDefaultScheduler());
 
 export type MostOperator<A, B> = (fa: Stream<A>) => Stream<B>;
 export type MonotypeMostOperator<A> = MostOperator<A, A>;
