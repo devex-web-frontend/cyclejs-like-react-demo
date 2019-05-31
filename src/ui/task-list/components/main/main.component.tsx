@@ -34,7 +34,6 @@ export const Main = (props: Observify<Props>) => {
 					if (typeof existing === 'undefined') {
 						const child = Task({
 							value: props.tasks.pipe(
-								startWith(nextState),
 								filterMap(tasks => {
 									for (let i = 0, n = tasks.length; i < n; i++) {
 										const task = tasks[i];
