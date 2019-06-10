@@ -1,9 +1,9 @@
 import { Component } from '../../../../utils';
 import * as React from 'react';
-import { of } from 'rxjs';
+import { Stream } from 'xstream';
 
 export const Footer: Component = () => {
-	const vdom = of(
+	const vdom = Stream.of(
 		<footer className="footer">
 			<span className="todo-count">
 				<strong>0</strong> item left

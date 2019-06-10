@@ -1,13 +1,12 @@
-import { filterMap, K, pipe, reduce, Observify, createHandler, log } from '../../../../utils';
+import { filterMap, K, reduce, Streamify, createHandler } from '../../../../utils';
 import * as React from 'react';
 import { randomId } from '@devexperts/utils/dist/string';
 import { Task, TaskValue } from '../../../task/components/task/task.component';
 import { ChangeEvent, Fragment } from 'react';
 import { none, some } from 'fp-ts/lib/Option';
 import { unsafeDeleteAt, unsafeUpdateAt } from 'fp-ts/lib/Array';
-import { map, mergeMap, scan, startWith, switchMap } from 'rxjs/operators';
-import { combineLatest, merge, Observable, of } from 'rxjs';
 import { Endomorphism } from 'fp-ts/lib/function';
+import xs from 'xstream';
 
 type Props = {
 	tasks: TaskValue[];
@@ -15,25 +14,25 @@ type Props = {
 
 const itemKey = (task: TaskValue, i: number): string => `${i}`;
 
-export const Main = (props: Observify<Props>) => {
+export const Main = (props: Streamify<Props>) => {
 	const toggleAllId = randomId('toggle-all-');
 	const [handleToggleAllChange, toggleAllChangeEvent] = createHandler<ChangeEvent<HTMLInputElement>>();
 
-	const tasks = props.tasks.pipe(
-		scan<TaskValue[], { dict: Map<string, ReturnType<typeof Task>>; arr: Array<ReturnType<typeof Task>> }>(
-			(acc, nextState) => {
-				const { dict } = acc;
-				const nextChildren = Array<ReturnType<typeof Task>>(nextState.length);
-				const nextKeys = new Set<string>();
+	const tasks = props.tasks.fold<{ dict: Map<string, ReturnType<typeof Task>>; arr: Array<ReturnType<typeof Task>> }>(
+		(acc, nextState) => {
+			const { dict } = acc;
+			const nextChildren = Array<ReturnType<typeof Task>>(nextState.length);
+			const nextKeys = new Set<string>();
 
-				// add
-				for (let i = 0, n = nextState.length; i < n; i++) {
-					const key = itemKey(nextState[i], i);
-					nextKeys.add(key);
-					const existing = dict.get(key);
-					if (typeof existing === 'undefined') {
-						const child = Task({
-							value: props.tasks.pipe(
+			// add
+			for (let i = 0, n = nextState.length; i < n; i++) {
+				const key = itemKey(nextState[i], i);
+				nextKeys.add(key);
+				const existing = dict.get(key);
+				if (typeof existing === 'undefined') {
+					const child = Task({
+						value: props.tasks
+							.compose(
 								filterMap(tasks => {
 									for (let i = 0, n = tasks.length; i < n; i++) {
 										const task = tasks[i];
@@ -43,60 +42,57 @@ export const Main = (props: Observify<Props>) => {
 									}
 									return none;
 								}),
-							),
-						});
-						const vdom = child.vdom.pipe(map(vdom => <Fragment key={key}>{vdom}</Fragment>));
-						const task = {
-							...child,
-							vdom,
-						};
-						dict.set(key, task);
-						nextChildren[i] = task;
-					} else {
-						nextChildren[i] = existing;
-					}
+							)
+							.remember(),
+					});
+					const vdom = child.vdom.map(vdom => <Fragment key={key}>{vdom}</Fragment>);
+					const task = {
+						...child,
+						vdom,
+					};
+					dict.set(key, task);
+					nextChildren[i] = task;
+				} else {
+					nextChildren[i] = existing;
 				}
+			}
 
-				// remove
-				dict.forEach((_, key) => {
-					if (!nextKeys.has(key)) {
-						dict.delete(key);
-					}
-				});
+			// remove
+			dict.forEach((_, key) => {
+				if (!nextKeys.has(key)) {
+					dict.delete(key);
+				}
+			});
 
-				nextKeys.clear();
+			nextKeys.clear();
 
-				return { dict, arr: nextChildren };
-			},
-			{ dict: new Map(), arr: [] },
-		),
+			return { dict, arr: nextChildren };
+		},
+		{ dict: new Map(), arr: [] },
 	);
 
-	const tasksVDom = tasks.pipe(
-		switchMap(tasks => (tasks.arr.length > 0 ? combineLatest(tasks.arr.map(task => task.vdom)) : of(null))),
-		map(vdoms => <Fragment>{vdoms}</Fragment>),
-	);
+	const tasksVDom = tasks
+		.map(tasks =>
+			tasks.arr.length > 0
+				? xs.combine(...tasks.arr.map(task => task.vdom)).map(vdoms => <Fragment>{vdoms}</Fragment>)
+				: xs.of(<Fragment />),
+		)
+		.flatten()
+		.remember();
 
-	const tasksValue: Observable<TaskValue[]> = pipe(
-		tasks,
-		switchMap(tasks =>
+	const tasksValue = tasks
+		.map(tasks =>
 			reduce(
 				props.tasks,
 				...tasks.arr.map((task, i) =>
-					pipe(
-						task.value,
-						map<TaskValue, Endomorphism<TaskValue[]>>(value => tasks => unsafeUpdateAt(i, value, tasks)),
-					),
+					task.value.map<Endomorphism<TaskValue[]>>(value => tasks => unsafeUpdateAt(i, value, tasks)),
 				),
 				...tasks.arr.map((task, i) =>
-					pipe(
-						task.destroy,
-						map<void, Endomorphism<TaskValue[]>>(() => tasks => unsafeDeleteAt(i, tasks)),
-					),
+					task.destroy.map<Endomorphism<TaskValue[]>>(() => tasks => unsafeDeleteAt(i, tasks)),
 				),
 			),
-		),
-	);
+		)
+		.flatten();
 
 	const vdom = K(tasksVDom, tasksVdom => (
 		<section className={'main'}>
@@ -106,12 +102,12 @@ export const Main = (props: Observify<Props>) => {
 		</section>
 	));
 
-	const value: Observable<TaskValue[]> = merge(
+	const value = xs.merge(
 		tasksValue,
 		reduce(
 			props.tasks,
-			K(toggleAllChangeEvent, e => e.target.checked).pipe(
-				map(completed => tasks => tasks.map(task => ({ ...task, completed }))),
+			K(toggleAllChangeEvent, e => e.target.checked).map(completed => tasks =>
+				tasks.map(task => ({ ...task, completed })),
 			),
 		),
 	);

@@ -1,11 +1,11 @@
-import { K, pipe, Observify, reduce, TargetKeyboardEvent, createHandler } from '../../../../utils';
+import { K, Streamify, reduce, TargetKeyboardEvent, createHandler } from '../../../../utils';
 import * as React from 'react';
 import cx from 'classnames';
 import { ChangeEvent, createRef, FocusEvent, MouseEvent } from 'react';
 import { compose, constVoid } from 'fp-ts/lib/function';
 import { Lens } from 'monocle-ts';
-import { distinctUntilChanged, filter, map, mapTo } from 'rxjs/operators';
-import { merge, Observable } from 'rxjs';
+import { Stream } from 'xstream';
+import dropRepeats from 'xstream/extra/dropRepeats';
 
 const ESC_KEY = 27;
 const ENTER_KEY = 13;
@@ -24,7 +24,7 @@ type Props = {
 	value: TaskValue;
 };
 
-export const Task = (props: Observify<Props>) => {
+export const Task = (props: Streamify<Props>) => {
 	const editInputRef = createRef<HTMLInputElement>();
 	const [handleDestroyClick, destroyClickEvent] = createHandler<MouseEvent<HTMLButtonElement>>();
 	const [handleToggleChange, toggleChangeEvent] = createHandler<ChangeEvent<HTMLInputElement>>();
@@ -56,33 +56,25 @@ export const Task = (props: Observify<Props>) => {
 		);
 	});
 
-	const destroy = pipe(
-		destroyClickEvent,
-		map(constVoid),
-	);
+	const destroy = destroyClickEvent.map(constVoid);
 
-	const value: Observable<TaskValue> = reduce(
+	const value: Stream<TaskValue> = reduce(
 		props.value,
-		titleDoubleClick.pipe(mapTo(editingLens.set(true))),
-		editKeyUpEvent.pipe(
-			filter(e => e.keyCode === ESC_KEY),
-			mapTo(editingLens.set(true)),
-		),
-		toggleChangeEvent.pipe(
-			map(e => e.target.checked),
-			distinctUntilChanged(),
-			map(completedLens.set),
-		),
-		merge(editKeyUpEvent.pipe(filter(e => e.keyCode === ENTER_KEY)), editBlurEvent).pipe(
-			map(e => e.target.value),
-			distinctUntilChanged(),
-			map(value =>
+		titleDoubleClick.mapTo(editingLens.set(true)),
+		editKeyUpEvent.filter(e => e.keyCode === ESC_KEY).mapTo(editingLens.set(true)),
+		toggleChangeEvent
+			.map(e => e.target.checked)
+			.compose(dropRepeats())
+			.map(completedLens.set),
+		Stream.merge(editKeyUpEvent.filter(e => e.keyCode === ENTER_KEY), editBlurEvent)
+			.map(e => e.target.value)
+			.compose(dropRepeats())
+			.map(value =>
 				compose(
 					editingLens.set(false),
 					titleLens.set(value),
 				),
 			),
-		),
 	);
 
 	return { vdom, value, destroy };

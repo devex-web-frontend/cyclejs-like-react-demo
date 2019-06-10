@@ -1,4 +1,4 @@
-import { Component, createValue, Empty, K } from '../../../../utils';
+import { createValue, K } from '../../../../utils';
 
 import 'todomvc-common/base.css';
 import 'todomvc-app-css/index.css';
@@ -7,12 +7,7 @@ import { Header } from '../header/header.component';
 import { Main } from '../main/main.component';
 import { Footer } from '../footer/footer.component';
 import { TaskValue } from '../../../task/components/task/task.component';
-import { map } from 'rxjs/operators';
-import { merge } from 'rxjs';
-
-type Sink = {
-	effect: void;
-};
+import { Stream } from 'xstream';
 
 const TASKS: TaskValue[] = [
 	{
@@ -27,7 +22,7 @@ const TASKS: TaskValue[] = [
 	},
 ];
 
-export const TaskList: Component<Empty, Sink> = () => {
+export const TaskList = () => {
 	const [setTasks, tasks] = createValue(TASKS);
 
 	const header = Header({
@@ -46,9 +41,9 @@ export const TaskList: Component<Empty, Sink> = () => {
 		</div>
 	));
 
-	const tasksEffect = merge(main.value, header.value).pipe(map(setTasks));
+	const tasksEffect = Stream.merge(main.value, header.value).map(setTasks);
 
-	const effect = merge(tasksEffect);
+	const effect = Stream.merge(tasksEffect);
 
 	return {
 		vdom,
