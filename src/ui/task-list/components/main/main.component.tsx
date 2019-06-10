@@ -94,13 +94,23 @@ export const Main = (props: Streamify<Props>) => {
 		)
 		.flatten();
 
-	const vdom = K(tasksVDom, tasksVdom => (
-		<section className={'main'}>
-			<input type="checkbox" className={'toggle-all'} id={toggleAllId} onChange={handleToggleAllChange} />
-			<label htmlFor={toggleAllId}>Mark all as comlete</label>
-			<ul className="todo-list">{tasksVdom}</ul>
-		</section>
-	));
+	const allCompleted = K(props.tasks, tasks => tasks.length > 0 && tasks.every(task => task.completed)).remember();
+
+	const vdom = K(tasksVDom, allCompleted, (tasksVdom, allCompleted) => {
+		return (
+			<section className={'main'}>
+				<input
+					type="checkbox"
+					className={'toggle-all'}
+					id={toggleAllId}
+					checked={allCompleted}
+					onChange={handleToggleAllChange}
+				/>
+				<label htmlFor={toggleAllId}>Mark all as comlete</label>
+				<ul className="todo-list">{tasksVdom}</ul>
+			</section>
+		);
+	});
 
 	const value = xs.merge(
 		tasksValue,
