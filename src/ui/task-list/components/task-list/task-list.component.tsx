@@ -7,7 +7,7 @@ import { Header } from '../header/header.component';
 import { Main } from '../main/main.component';
 import { Footer } from '../footer/footer.component';
 import { TaskValue } from '../../../task/components/task/task.component';
-import { Stream } from 'xstream';
+import xs from 'xstream';
 
 const TASKS: TaskValue[] = [
 	{
@@ -25,15 +25,10 @@ const TASKS: TaskValue[] = [
 export const TaskList = () => {
 	const [setTasks, tasks] = createValue(TASKS);
 
-	const header = Header({
-		tasks,
-	});
+	const header = Header({ tasks });
 
-	const main = Main({
-		tasks,
-	});
-	const active = K(tasks, tasks => tasks.filter(task => !task.completed).length);
-	const footer = Footer({ active });
+	const main = Main({ tasks });
+	const footer = Footer({ tasks });
 	const vdom = K(header.vdom, main.vdom, footer.vdom, (header, main, footer) => (
 		<div>
 			{header}
@@ -42,9 +37,9 @@ export const TaskList = () => {
 		</div>
 	));
 
-	const tasksEffect = Stream.merge(main.value, header.value).map(setTasks);
+	const tasksEffect = xs.merge(main.value, header.value, footer.value).map(setTasks);
 
-	const effect = Stream.merge(tasksEffect);
+	const effect = xs.merge(tasksEffect);
 
 	return {
 		vdom,
