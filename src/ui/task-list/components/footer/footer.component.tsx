@@ -1,12 +1,15 @@
-import { Component } from '../../../../utils';
 import * as React from 'react';
-import { Stream } from 'xstream';
+import { K, Streamify } from '../../../../utils';
 
-export const Footer: Component = () => {
-	const vdom = Stream.of(
+type Props = {
+	active: number;
+};
+
+export const Footer = (props: Streamify<Props>) => {
+	const vdom = K(props.active, active => (
 		<footer className="footer">
 			<span className="todo-count">
-				<strong>0</strong> item left
+				<strong>{active}</strong> item left
 			</span>
 			<ul className="filters">
 				<li>
@@ -22,8 +25,8 @@ export const Footer: Component = () => {
 				</li>
 			</ul>
 			<button className="clear-completed">Clear completed</button>
-		</footer>,
-	);
+		</footer>
+	));
 
 	return {
 		vdom,

@@ -32,7 +32,8 @@ export const TaskList = () => {
 	const main = Main({
 		tasks,
 	});
-	const footer = Footer();
+	const active = K(tasks, tasks => tasks.filter(task => !task.completed).length);
+	const footer = Footer({ active });
 	const vdom = K(header.vdom, main.vdom, footer.vdom, (header, main, footer) => (
 		<div>
 			{header}
