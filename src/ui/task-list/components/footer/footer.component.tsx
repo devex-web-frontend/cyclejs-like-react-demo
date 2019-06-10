@@ -16,7 +16,7 @@ export const Footer = (props: Streamify<Props>) => {
 	const vdom = K(active, completed, (active, completed) => (
 		<footer className="footer">
 			<span className="todo-count">
-				<strong>{active}</strong> item left
+				<strong>{active}</strong> item{active !== 1 ? 's' : ''} left
 			</span>
 			<ul className="filters">
 				<li>
