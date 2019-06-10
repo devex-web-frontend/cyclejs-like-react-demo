@@ -1,5 +1,5 @@
 import { Endomorphism } from 'fp-ts/lib/function';
-import { ComponentType, KeyboardEvent, memo, ReactElement, useEffect, useMemo, useState } from 'react';
+import { KeyboardEvent, ReactElement } from 'react';
 
 import {
 	ProductMap,
@@ -32,18 +32,6 @@ export const filterMap = <A, B>(f: (a: A) => Option<B>): Operator<A, B> => fa =>
 		.map(f)
 		.filter(isSome)
 		.map(o => o.value);
-
-export function toReactComponent(component: Component<Empty, { effect: void }>): ComponentType {
-	return memo(() => {
-		const c = useMemo(() => component(), []);
-		const [state, setState] = useState<ReactElement>();
-		useEffect(() => {
-			const subscription = Stream.merge(c.vdom.map(setState), c.effect).subscribe({});
-			return () => subscription.unsubscribe();
-		}, [c]);
-		return state || null;
-	});
-}
 
 declare module 'fp-ts/lib/HKT' {
 	interface URI2HKT2<L, A> {
