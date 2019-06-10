@@ -73,7 +73,7 @@ export const Main = (props: Observify<Props>) => {
 	);
 
 	const tasksVDom = tasks.pipe(
-		switchMap(tasks => combineLatest(tasks.arr.map(task => task.vdom))),
+		switchMap(tasks => (tasks.arr.length > 0 ? combineLatest(tasks.arr.map(task => task.vdom)) : of(null))),
 		map(vdoms => <Fragment>{vdoms}</Fragment>),
 	);
 
