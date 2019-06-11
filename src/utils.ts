@@ -6,7 +6,7 @@ import {
 	ProjectMany,
 } from '@devexperts/utils/dist/typeclasses/product-left-coproduct-left/product-left-coproduct-left.utils';
 import { isSome, Option, some, none } from 'fp-ts/lib/Option';
-import xs, { MemoryStream, Stream } from 'xstream';
+import xs, { Stream } from 'xstream';
 import dropRepeats from 'xstream/extra/dropRepeats';
 import sampleCombine from 'xstream/extra/sampleCombine';
 
@@ -135,14 +135,14 @@ export const collection = <A, O extends Output, R>(
 
 export type StreamValueType<S extends Stream<any>> = S extends Stream<infer A> ? A : never;
 
-export const pickCombine = <K extends keyof O, O extends { [P in K]: Stream<any> }>(key: K) => (
+export const pickCombineAll = <K extends keyof O, O extends { [P in K]: Stream<any> }>(key: K) => (
 	source: Stream<O[]>,
 ): Stream<StreamValueType<O[K]>[]> =>
 	source
 		.map(os => (os.length === 0 ? xs.of<StreamValueType<O[K]>[]>([]) : xs.combine(...os.map(o => o[key]))))
 		.flatten();
 
-export const pickMergeMap = <B, K extends keyof O, O extends { [P in K]: Stream<any> }>(
+export const pickMergeMapAll = <B, K extends keyof O, O extends { [P in K]: Stream<any> }>(
 	key: K,
 	f: (a: StreamValueType<O[K]>, i: number) => B,
 ) => (source: Stream<O[]>): Stream<B> =>

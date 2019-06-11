@@ -1,4 +1,4 @@
-import { K, reduce, Streamify, createHandler, collection, pickMergeMap, pickCombine } from '../../../../utils';
+import { K, reduce, Streamify, createHandler, collection, pickMergeMapAll, pickCombineAll } from '../../../../utils';
 import * as React from 'react';
 import { randomId } from '@devexperts/utils/dist/string';
 import { Task, TaskValue } from '../../../task/components/task/task.component';
@@ -20,12 +20,12 @@ export const Main = (props: Streamify<Props>) => {
 	const [handleToggleAllChange, toggleAllChangeEvent] = createHandler<ChangeEvent<HTMLInputElement>>();
 
 	const tasks = collection(props.tasks, Task, itemKey, children => {
-		const vdom = children.compose(pickCombine('vdom'));
+		const vdom = children.compose(pickCombineAll('vdom'));
 
 		const value = reduce(
 			props.tasks,
-			children.compose(pickMergeMap('destroy', destroy)),
-			children.compose(pickMergeMap('value', update)),
+			children.compose(pickMergeMapAll('destroy', destroy)),
+			children.compose(pickMergeMapAll('value', update)),
 		);
 
 		return {
