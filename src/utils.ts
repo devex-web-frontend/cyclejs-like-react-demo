@@ -18,7 +18,8 @@ type Output = Streamify<{
 }>;
 
 export const reduce = <A>(a: Stream<A>, ...reducers: Stream<Endomorphism<A>>[]): Stream<A> =>
-	Stream.merge(...reducers)
+	xs
+		.merge(...reducers)
 		.compose(sampleCombine(a))
 		.map(([reducer, a]) => reducer(a));
 
@@ -37,13 +38,14 @@ declare module 'fp-ts/lib/HKT' {
 export const K: ProductMap<'Stream'> = <A, R>(...args: Array<Stream<A> | ProjectMany<A, R>>): Stream<R> => {
 	const streams = args.slice(0, -1) as Stream<A>[];
 	const project = args[args.length - 1] as ProjectMany<A, R>;
-	return Stream.combine(...streams)
+	return xs
+		.combine(...streams)
 		.map(args => project(...args))
 		.compose(dropRepeats());
 };
 
 export const createHandler = <A = never>(): [(a: A) => void, Stream<A>] => {
-	const s = Stream.create<A>();
+	const s = xs.create<A>();
 	const next = (a: A) => s.shamefullySendNext(a);
 	return [next, s];
 };
