@@ -16,7 +16,6 @@ export type Streamify<O extends object> = { [K in keyof O]: Stream<O[K]> };
 type Output = Streamify<{
 	vdom: ReactElement;
 }>;
-export type Empty = Record<string, never>;
 
 export const reduce = <A>(a: Stream<A>, ...reducers: Stream<Endomorphism<A>>[]): Stream<A> =>
 	Stream.merge(...reducers)
@@ -68,27 +67,27 @@ export interface TargetKeyboardEvent<T = Element> extends KeyboardEvent<T> {
  * Inspired by @cyclejs/state
  * @see https://github.com/cyclejs/cyclejs/blob/master/state/src/Collection.ts
  */
-export const collection = <A, IR extends Output, R>(
+export const collection = <A, O extends Output, R>(
 	source: Stream<A[]>,
-	Item: (props: Streamify<{ value: A }>) => IR,
+	Item: (props: Streamify<{ value: A }>) => O,
 	itemKey: (a: A, i: number) => string,
-	collect: (outs: Stream<IR[]>) => R,
+	collect: (outs: Stream<O[]>) => R,
 ): R => {
 	type State = {
-		dict: Map<string, IR>;
-		arr: IR[];
+		storage: Map<string, O>;
+		result: O[];
 	};
 	const state = source.fold<State>(
 		(acc, nextState) => {
-			const { dict } = acc;
-			const nextChildren = Array<IR>(nextState.length);
+			const { storage } = acc;
+			acc.result = Array<O>(nextState.length);
 			const nextKeys = new Set<string>();
 
 			// add
 			for (let i = 0, n = nextState.length; i < n; i++) {
 				const key = itemKey(nextState[i], i);
 				nextKeys.add(key);
-				const existing = dict.get(key);
+				const existing = storage.get(key);
 				if (typeof existing === 'undefined') {
 					const child = Item({
 						value: source
@@ -110,40 +109,41 @@ export const collection = <A, IR extends Output, R>(
 						...child,
 						vdom,
 					};
-					dict.set(key, result);
-					nextChildren[i] = result;
+					storage.set(key, result);
+					acc.result[i] = result;
 				} else {
-					nextChildren[i] = existing;
+					acc.result[i] = existing;
 				}
 			}
 
 			// remove
-			dict.forEach((_, key) => {
+			storage.forEach((_, key) => {
 				if (!nextKeys.has(key)) {
-					dict.delete(key);
+					storage.delete(key);
 				}
 			});
 
 			nextKeys.clear();
 
-			return { dict, arr: nextChildren };
+			return acc;
 		},
-		{ dict: new Map(), arr: [] },
+		{ storage: new Map(), result: [] },
 	);
 
-	return collect(state.map(state => state.arr));
+	return collect(state.map(state => state.result));
 };
 
-export const pickCombine = <A, K extends keyof O, O extends { [P in K]: Stream<A> }>(key: K, empty: A) => (
+export type StreamValueType<S extends Stream<any>> = S extends Stream<infer A> ? A : never;
+
+export const pickCombine = <K extends keyof O, O extends { [P in K]: Stream<any> }>(key: K) => (
 	source: Stream<O[]>,
-): MemoryStream<A[]> =>
+): Stream<StreamValueType<O[K]>[]> =>
 	source
-		.map(os => (os.length === 0 ? xs.of([empty]) : xs.combine(...os.map(o => o[key]))))
-		.flatten()
-		.remember();
+		.map(os => (os.length === 0 ? xs.of<StreamValueType<O[K]>[]>([]) : xs.combine(...os.map(o => o[key]))))
+		.flatten();
 
 export const pickMergeMap = <B, K extends keyof O, O extends { [P in K]: Stream<any> }>(
 	key: K,
-	f: (a: O[K] extends Stream<infer A> ? A : never, i: number) => B,
+	f: (a: StreamValueType<O[K]>, i: number) => B,
 ) => (source: Stream<O[]>): Stream<B> =>
 	source.map(os => xs.merge(...os.map((o, i) => o[key].map(a => f(a, i))))).flatten();

@@ -1,8 +1,8 @@
-import { K, reduce, Streamify, createHandler, collection, pickCombine, pickMergeMap } from '../../../../utils';
+import { K, reduce, Streamify, createHandler, collection, pickMergeMap, pickCombine } from '../../../../utils';
 import * as React from 'react';
 import { randomId } from '@devexperts/utils/dist/string';
 import { Task, TaskValue } from '../../../task/components/task/task.component';
-import { ChangeEvent, Fragment } from 'react';
+import { ChangeEvent } from 'react';
 import { unsafeDeleteAt, unsafeUpdateAt } from 'fp-ts/lib/Array';
 import xs from 'xstream';
 
@@ -20,7 +20,7 @@ export const Main = (props: Streamify<Props>) => {
 	const [handleToggleAllChange, toggleAllChangeEvent] = createHandler<ChangeEvent<HTMLInputElement>>();
 
 	const tasks = collection(props.tasks, Task, itemKey, children => {
-		const vdom = children.compose(pickCombine('vdom', <Fragment />));
+		const vdom = children.compose(pickCombine('vdom'));
 
 		const value = reduce(
 			props.tasks,
