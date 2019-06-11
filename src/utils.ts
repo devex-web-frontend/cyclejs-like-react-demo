@@ -1,12 +1,12 @@
 import { Endomorphism } from 'fp-ts/lib/function';
-import { createElement, Fragment, KeyboardEvent, default as React, ReactElement } from 'react';
+import { createElement, Fragment, KeyboardEvent, ReactElement } from 'react';
 
 import {
 	ProductMap,
 	ProjectMany,
 } from '@devexperts/utils/dist/typeclasses/product-left-coproduct-left/product-left-coproduct-left.utils';
 import { isSome, Option, some, none } from 'fp-ts/lib/Option';
-import { MemoryStream, Stream } from 'xstream';
+import xs, { MemoryStream, Stream } from 'xstream';
 import dropRepeats from 'xstream/extra/dropRepeats';
 import sampleCombine from 'xstream/extra/sampleCombine';
 
@@ -134,8 +134,16 @@ export const collection = <A, IR extends Output, R>(
 	return collect(state.map(state => state.arr));
 };
 
-export const chain = <A, B>(f: (a: A) => Stream<B>) => (source: Stream<A>): MemoryStream<B> =>
+export const pickCombine = <A, K extends keyof O, O extends { [P in K]: Stream<A> }>(key: K, empty: A) => (
+	source: Stream<O[]>,
+): MemoryStream<A[]> =>
 	source
-		.map(f)
+		.map(os => (os.length === 0 ? xs.of([empty]) : xs.combine(...os.map(o => o[key]))))
 		.flatten()
 		.remember();
+
+export const pickMergeMap = <B, K extends keyof O, O extends { [P in K]: Stream<any> }>(
+	key: K,
+	f: (a: O[K] extends Stream<infer A> ? A : never, i: number) => B,
+) => (source: Stream<O[]>): Stream<B> =>
+	source.map(os => xs.merge(...os.map((o, i) => o[key].map(a => f(a, i))))).flatten();

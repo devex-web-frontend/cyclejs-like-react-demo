@@ -1,12 +1,10 @@
-import { K, reduce, Streamify, createHandler, collection, chain } from '../../../../utils';
+import { K, reduce, Streamify, createHandler, collection, pickCombine, pickMergeMap } from '../../../../utils';
 import * as React from 'react';
 import { randomId } from '@devexperts/utils/dist/string';
 import { Task, TaskValue } from '../../../task/components/task/task.component';
 import { ChangeEvent, Fragment } from 'react';
 import { unsafeDeleteAt, unsafeUpdateAt } from 'fp-ts/lib/Array';
-import { Endomorphism } from 'fp-ts/lib/function';
 import xs from 'xstream';
-import { createElement } from 'react';
 
 type Props = {
 	tasks: TaskValue[];
@@ -14,31 +12,22 @@ type Props = {
 
 const itemKey = (task: TaskValue, i: number): string => `item-${i}`;
 
+const destroy = (_: unknown, i: number) => (tasks: TaskValue[]) => unsafeDeleteAt(i, tasks);
+const update = (value: TaskValue, i: number) => (tasks: TaskValue[]) => unsafeUpdateAt(i, value, tasks);
+
 export const Main = (props: Streamify<Props>) => {
 	const toggleAllId = randomId('toggle-all-');
 	const [handleToggleAllChange, toggleAllChangeEvent] = createHandler<ChangeEvent<HTMLInputElement>>();
 
-	const tasks = collection(props.tasks, Task, itemKey, tasks => {
-		const vdom = tasks.compose(
-			chain(tasks =>
-				tasks.length > 0
-					? xs.combine(...tasks.map(task => task.vdom)).map(vdoms => createElement(Fragment, null, vdoms))
-					: xs.of(createElement(Fragment)),
-			),
+	const tasks = collection(props.tasks, Task, itemKey, children => {
+		const vdom = children.compose(pickCombine('vdom', <Fragment />));
+
+		const value = reduce(
+			props.tasks,
+			children.compose(pickMergeMap('destroy', destroy)),
+			children.compose(pickMergeMap('value', update)),
 		);
-		const value = tasks.compose(
-			chain(tasks =>
-				reduce(
-					props.tasks,
-					...tasks.map((task, i) =>
-						task.value.map<Endomorphism<TaskValue[]>>(value => tasks => unsafeUpdateAt(i, value, tasks)),
-					),
-					...tasks.map((task, i) =>
-						task.destroy.map<Endomorphism<TaskValue[]>>(() => tasks => unsafeDeleteAt(i, tasks)),
-					),
-				),
-			),
-		);
+
 		return {
 			vdom,
 			value,
