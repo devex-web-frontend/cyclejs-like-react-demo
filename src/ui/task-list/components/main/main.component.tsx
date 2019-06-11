@@ -1,4 +1,4 @@
-import { K, reduce, Streamify, createHandler, collection } from '../../../../utils';
+import { K, reduce, Streamify, createHandler, collection, chain } from '../../../../utils';
 import * as React from 'react';
 import { randomId } from '@devexperts/utils/dist/string';
 import { Task, TaskValue } from '../../../task/components/task/task.component';
@@ -18,17 +18,16 @@ export const Main = (props: Streamify<Props>) => {
 	const toggleAllId = randomId('toggle-all-');
 	const [handleToggleAllChange, toggleAllChangeEvent] = createHandler<ChangeEvent<HTMLInputElement>>();
 
-	const tasks2 = collection(props.tasks, Task, itemKey, tasks => {
-		const vdom = tasks
-			.map(tasks =>
+	const tasks = collection(props.tasks, Task, itemKey, tasks => {
+		const vdom = tasks.compose(
+			chain(tasks =>
 				tasks.length > 0
 					? xs.combine(...tasks.map(task => task.vdom)).map(vdoms => createElement(Fragment, null, vdoms))
 					: xs.of(createElement(Fragment)),
-			)
-			.flatten()
-			.remember();
-		const value = tasks
-			.map(tasks =>
+			),
+		);
+		const value = tasks.compose(
+			chain(tasks =>
 				reduce(
 					props.tasks,
 					...tasks.map((task, i) =>
@@ -38,9 +37,8 @@ export const Main = (props: Streamify<Props>) => {
 						task.destroy.map<Endomorphism<TaskValue[]>>(() => tasks => unsafeDeleteAt(i, tasks)),
 					),
 				),
-			)
-			.flatten()
-			.remember();
+			),
+		);
 		return {
 			vdom,
 			value,
@@ -49,7 +47,7 @@ export const Main = (props: Streamify<Props>) => {
 
 	const allCompleted = K(props.tasks, tasks => tasks.length > 0 && tasks.every(task => task.completed)).remember();
 
-	const vdom = K(tasks2.vdom, allCompleted, (tasksVdom, allCompleted) => {
+	const vdom = K(tasks.vdom, allCompleted, (tasksVdom, allCompleted) => {
 		return (
 			<section className={'main'}>
 				<input
@@ -66,7 +64,7 @@ export const Main = (props: Streamify<Props>) => {
 	});
 
 	const value = xs.merge(
-		tasks2.value,
+		tasks.value,
 		reduce(
 			props.tasks,
 			K(toggleAllChangeEvent, e => e.target.checked).map(completed => tasks =>

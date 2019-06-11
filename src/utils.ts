@@ -6,7 +6,7 @@ import {
 	ProjectMany,
 } from '@devexperts/utils/dist/typeclasses/product-left-coproduct-left/product-left-coproduct-left.utils';
 import { isSome, Option, some, none } from 'fp-ts/lib/Option';
-import { Stream } from 'xstream';
+import { MemoryStream, Stream } from 'xstream';
 import dropRepeats from 'xstream/extra/dropRepeats';
 import sampleCombine from 'xstream/extra/sampleCombine';
 
@@ -133,3 +133,9 @@ export const collection = <A, IR extends Output, R>(
 
 	return collect(state.map(state => state.arr));
 };
+
+export const chain = <A, B>(f: (a: A) => Stream<B>) => (source: Stream<A>): MemoryStream<B> =>
+	source
+		.map(f)
+		.flatten()
+		.remember();
