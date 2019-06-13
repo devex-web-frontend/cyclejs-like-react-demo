@@ -60,10 +60,7 @@ export const Task = (props: Streamify<Props>) => {
 		props.value,
 		handleTitleDoubleClick.mapTo(setEditing(true)),
 		handleEditKeyUp.filter(e => e.keyCode === ESC_KEY).mapTo(setEditing(true)),
-		handleToggleChange
-			.map(e => e.target.checked)
-			.compose(dropRepeats())
-			.map(setCompleted),
+		handleToggleChange.map(e => e.target.checked).map(setCompleted),
 		xs.merge(enterKeyUp, handleEditBlur).mapTo(setEditing(false)),
 		xs
 			.merge(enterKeyUp, handleEditBlur)
