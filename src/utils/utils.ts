@@ -35,6 +35,12 @@ export const filterMap = <A, B>(f: (a: A) => Option<B>): Operator<A, B> => fa =>
 		.filter(isSome)
 		.map(o => o.value);
 
+export const tap = <A>(f: (a: A) => void): Operator<A, A> => fa =>
+	fa.map(a => {
+		f(a);
+		return a;
+	});
+
 declare module 'fp-ts/lib/HKT' {
 	interface URI2HKT2<L, A> {
 		Stream: Stream<A>;

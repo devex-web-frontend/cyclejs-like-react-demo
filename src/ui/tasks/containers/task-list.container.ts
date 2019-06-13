@@ -3,9 +3,10 @@ import { ask } from 'fp-ts/lib/Reader';
 import { TaskList } from '../components/task-list/task-list.component';
 import { combineReader } from '@devexperts/utils/dist/adt/reader.utils';
 import { Omit } from 'typelevel-ts';
-import { createValue, First, ReaderValueType } from '../../../utils/utils';
-import { Stream } from 'xstream';
+import { createHandler, First, ReaderValueType, tap } from '../../../utils/utils';
+import xs, { Stream } from 'xstream';
 import { tasksService } from '../../../services/tasks.service';
+import { Tasks } from '../model/tasks.model';
 
 type TaskListContainerContext = {
 	location: Stream<Location>;
@@ -18,16 +19,22 @@ export const TaskListContainer = combineReader(
 	tasksService,
 	ask<TaskListContainerContext>(),
 	(TaskList, tasksService, { location }) => (props: Props) => {
-		const [setTasks, tasks] = createValue(tasksService.load());
+		const local = createHandler<Tasks>();
+		const tasks = xs.merge(tasksService.load(), local).remember();
+
 		const { vdom, value } = TaskList({
 			...props,
 			location,
 			tasks,
 		});
-		const effect = value.map(value => {
-			setTasks(value);
-			tasksService.save(value);
-		});
+
+		const effect = value.compose(
+			tap(value => {
+				tasksService.save(value);
+				local(value);
+			}),
+		);
+
 		return {
 			vdom,
 			effect,

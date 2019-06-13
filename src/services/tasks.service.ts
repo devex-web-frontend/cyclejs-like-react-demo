@@ -1,7 +1,10 @@
 import { combineReader } from '@devexperts/utils/dist/adt/reader.utils';
 import { ask } from 'fp-ts/lib/Reader';
 import { array, boolean, string, type, TypeOf } from 'io-ts';
-import { JSONFromString } from '../utils/utils';
+import { filterMap, JSONFromString } from '../utils/utils';
+import { MemoryStream } from 'xstream';
+import fromEvent from 'xstream/extra/fromEvent';
+import { fromEither } from 'fp-ts/lib/Option';
 
 type TasksServiceContext = {
 	storage: Storage;
@@ -17,8 +20,13 @@ const STORAGE_KEY = 'STORAGE_KEY';
 
 const codec = string.pipe(JSONFromString).pipe(tasks);
 
+const event = fromEvent<StorageEvent>(window, 'storage')
+	.filter(e => e.key === STORAGE_KEY)
+	.compose(filterMap(e => fromEither(codec.decode(e.newValue))));
+
 export const tasksService = combineReader(ask<TasksServiceContext>(), ({ storage }) => {
-	const load = () => codec.decode(storage.getItem(STORAGE_KEY)).getOrElse([]);
+	const load = (): MemoryStream<TypeOf<typeof codec>> =>
+		event.startWith(codec.decode(storage.getItem(STORAGE_KEY)).getOrElse([])).remember();
 	const save = (value: TypeOf<typeof codec>) => storage.setItem(STORAGE_KEY, string.pipe(codec).encode(value));
 	return {
 		load,
