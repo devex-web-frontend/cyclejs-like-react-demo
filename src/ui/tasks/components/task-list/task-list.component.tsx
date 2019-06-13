@@ -1,4 +1,4 @@
-import { createValue, K, Streamify } from '../../../../utils';
+import { createValue, K, Streamify } from '../../../../utils/utils';
 
 import 'todomvc-common/base.css';
 import 'todomvc-app-css/index.css';
@@ -6,9 +6,10 @@ import * as React from 'react';
 import { Header } from '../header/header.component';
 import { Main } from '../main/main.component';
 import { Footer } from '../footer/footer.component';
-import { TaskValue } from '../../../task/components/task/task.component';
-import xs, { Producer } from 'xstream';
-import { History, Location } from 'history';
+import { TaskValue } from '../task/task.component';
+import xs from 'xstream';
+import { Location } from 'history';
+import { combineReader } from '@devexperts/utils/dist/adt/reader.utils';
 
 const TASKS: TaskValue[] = [
 	{
@@ -27,7 +28,7 @@ type Props = {
 	location: Location;
 };
 
-export const TaskList = (props: Streamify<Props>) => {
+export const TaskList = combineReader(Footer, Footer => (props: Streamify<Props>) => {
 	const [setTasks, local] = createValue(TASKS);
 
 	const tasks = K(local, props.location, (tasks, location) => {
@@ -64,4 +65,4 @@ export const TaskList = (props: Streamify<Props>) => {
 		vdom,
 		effect,
 	};
-};
+});

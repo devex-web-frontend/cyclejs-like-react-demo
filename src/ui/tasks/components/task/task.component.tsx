@@ -1,4 +1,4 @@
-import { K, Streamify, reduce, TargetKeyboardEvent, createHandler } from '../../../../utils';
+import { K, Streamify, reduce, TargetKeyboardEvent, createHandler } from '../../../../utils/utils';
 import * as React from 'react';
 import cx from 'classnames';
 import { ChangeEvent, createRef, FocusEvent, MouseEvent } from 'react';

@@ -1,7 +1,7 @@
-import { K, reduce, Streamify, createHandler, collection, pickMergeMapAll, pickCombineAll } from '../../../../utils';
+import { K, reduce, Streamify, createHandler, collection, pickMergeMapAll, pickCombineAll } from '../../../../utils/utils';
 import * as React from 'react';
 import { randomId } from '@devexperts/utils/dist/string';
-import { Task, TaskValue } from '../../../task/components/task/task.component';
+import { Task, TaskValue } from '../task/task.component';
 import { ChangeEvent } from 'react';
 import { unsafeDeleteAt, unsafeUpdateAt } from 'fp-ts/lib/Array';
 import xs from 'xstream';

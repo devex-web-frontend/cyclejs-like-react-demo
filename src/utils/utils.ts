@@ -9,10 +9,14 @@ import { isSome, Option, some, none } from 'fp-ts/lib/Option';
 import xs, { Stream } from 'xstream';
 import dropRepeats from 'xstream/extra/dropRepeats';
 import sampleCombine from 'xstream/extra/sampleCombine';
+import { map } from 'fp-ts/lib/Record';
+import { Reader } from 'fp-ts/lib/Reader';
 
 export type Operator<A, B> = (source: Stream<A>) => Stream<B>;
 
 export type Streamify<O extends object> = { [K in keyof O]: Stream<O[K]> };
+export const streamify = <O extends object>(obj: O): Streamify<O> => map(obj, xs.of) as any;
+
 type Output = Streamify<{
 	vdom: ReactElement;
 }>;
@@ -158,3 +162,6 @@ export const pickMergeMapAll = <B, K extends keyof O, O extends { [P in K]: Stre
 	f: (a: StreamValueType<O[K]>, i: number) => B,
 ) => (source: Stream<O[]>): Stream<B> =>
 	source.map(os => xs.merge(...os.map((o, i) => o[key].map(a => f(a, i))))).flatten();
+
+export type First<A extends [any, ...any[]]> = A extends [infer F, ...any[]] ? F : never;
+export type ReaderValueType<R extends Reader<any, any>> = R extends Reader<any, infer A> ? A : never;
