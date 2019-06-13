@@ -38,10 +38,10 @@ export const TaskList = combineReader(Footer, Footer => (props: Streamify<Props>
 	const filtered = K(tasks, active, completed, location, (tasks, active, completed, location) => {
 		switch (location.pathname) {
 			case '/active': {
-				return getActive(tasks);
+				return active;
 			}
 			case '/completed': {
-				return getCompleted(tasks);
+				return completed;
 			}
 			default: {
 				return tasks;
