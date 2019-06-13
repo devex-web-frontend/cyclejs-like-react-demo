@@ -11,26 +11,13 @@ import { Location } from 'history';
 import { combineReader } from '@devexperts/utils/dist/adt/reader.utils';
 import { getActive, getCompleted, Tasks } from '../../model/tasks.model';
 
-const TASKS: Tasks = [
-	{
-		completed: false,
-		editing: false,
-		title: 'foo',
-	},
-	{
-		completed: false,
-		editing: false,
-		title: 'bla',
-	},
-];
-
 type Props = {
 	location: Location;
+	tasks: Tasks;
 };
 
 export const TaskList = combineReader(Footer, Footer => (props: Streamify<Props>) => {
-	const [setTasks, tasks] = createValue(TASKS);
-	const { location } = props;
+	const { location, tasks } = props;
 
 	const active = K(tasks, getActive).remember();
 	const completed = K(tasks, getCompleted).remember();
@@ -64,12 +51,10 @@ export const TaskList = combineReader(Footer, Footer => (props: Streamify<Props>
 		</div>
 	));
 
-	const tasksEffect = xs.merge(main.value, header.value, footer.value).map(setTasks);
-
-	const effect = xs.merge(tasksEffect);
+	const value = xs.merge(main.value, header.value, footer.value);
 
 	return {
 		vdom,
-		effect,
+		value,
 	};
 });
