@@ -13,16 +13,14 @@ import { Task } from '../task/task.component';
 import { ChangeEvent } from 'react';
 import { unsafeDeleteAt, unsafeUpdateAt } from 'fp-ts/lib/Array';
 import xs from 'xstream';
-import { Tasks, TaskValue } from '../../model/tasks.model';
+import { deleteAt, Tasks, updateAt } from '../../model/tasks.model';
+import { TaskValue } from '../../model/task.model';
 
 type Props = {
 	tasks: Tasks;
 };
 
 const itemKey = (task: TaskValue, i: number): string => `item-${i}`;
-
-const destroy = (_: unknown, i: number) => (tasks: Tasks) => unsafeDeleteAt(i, tasks);
-const update = (value: TaskValue, i: number) => (tasks: Tasks) => unsafeUpdateAt(i, value, tasks);
 
 export const Main = (props: Streamify<Props>) => {
 	const toggleAllId = randomId('toggle-all-');
@@ -33,8 +31,8 @@ export const Main = (props: Streamify<Props>) => {
 
 		const value = reduce(
 			props.tasks,
-			children.compose(pickMergeMapAll('destroy', destroy)),
-			children.compose(pickMergeMapAll('value', update)),
+			children.compose(pickMergeMapAll('destroy', (_, i) => deleteAt(i))),
+			children.compose(pickMergeMapAll('value', (task, i) => updateAt(i, task))),
 		);
 
 		return {

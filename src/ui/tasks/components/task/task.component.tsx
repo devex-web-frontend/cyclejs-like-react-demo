@@ -6,7 +6,7 @@ import { constVoid } from 'fp-ts/lib/function';
 import xs from 'xstream';
 import dropRepeats from 'xstream/extra/dropRepeats';
 import sampleCombine from 'xstream/extra/sampleCombine';
-import { completedLens, editingLens, TaskValue, titleLens } from '../../model/tasks.model';
+import { setCompleted, setEditing, setTitle, TaskValue } from '../../model/task.model';
 
 const ESC_KEY = 27;
 const ENTER_KEY = 13;
@@ -53,25 +53,22 @@ export const Task = (props: Streamify<Props>) => {
 		);
 	});
 
-	const setEditingTrue = editingLens.set(true);
-	const setEditingFalse = editingLens.set(false);
-
 	const destroy = handleDestroyClick.map(constVoid);
 	const enterKeyUp = handleEditKeyUp.filter(e => e.keyCode === ENTER_KEY);
 
 	const value = reduce(
 		props.value,
-		handleTitleDoubleClick.mapTo(setEditingTrue),
-		handleEditKeyUp.filter(e => e.keyCode === ESC_KEY).mapTo(setEditingTrue),
+		handleTitleDoubleClick.mapTo(setEditing(true)),
+		handleEditKeyUp.filter(e => e.keyCode === ESC_KEY).mapTo(setEditing(true)),
 		handleToggleChange
 			.map(e => e.target.checked)
 			.compose(dropRepeats())
-			.map(completedLens.set),
-		xs.merge(enterKeyUp, handleEditBlur).mapTo(setEditingFalse),
+			.map(setCompleted),
+		xs.merge(enterKeyUp, handleEditBlur).mapTo(setEditing(false)),
 		xs
 			.merge(enterKeyUp, handleEditBlur)
 			.compose(sampleCombine(title))
-			.map(([_, n]) => titleLens.set(n)),
+			.map(([_, title]) => setTitle(title)),
 	);
 
 	return { vdom, value, destroy };
