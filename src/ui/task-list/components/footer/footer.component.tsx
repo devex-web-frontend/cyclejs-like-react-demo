@@ -25,7 +25,7 @@ export const Footer = (props: Streamify<Props>) => {
 	const active = K(props.tasks, tasks => tasks.filter(task => !task.completed).length);
 	const completed = K(props.tasks, tasks => tasks.filter(task => task.completed).length);
 
-	const [handleClearCompletedClick, clearCompletedEvent] = createHandler<MouseEvent<HTMLButtonElement>>();
+	const handleClearCompletedClick = createHandler<MouseEvent<HTMLButtonElement>>();
 
 	const pathname = K(props.location, location => location.pathname);
 
@@ -47,7 +47,7 @@ export const Footer = (props: Streamify<Props>) => {
 		</footer>
 	));
 
-	const value = reduce(props.tasks, clearCompletedEvent.mapTo(tasks => tasks.filter(s => !s.completed)));
+	const value = reduce(props.tasks, handleClearCompletedClick.mapTo(tasks => tasks.filter(s => !s.completed)));
 
 	return {
 		vdom,

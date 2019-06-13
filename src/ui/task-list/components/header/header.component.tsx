@@ -1,4 +1,4 @@
-import { createHandler, filterMap, Streamify, reduce, TargetKeyboardEvent } from '../../../../utils';
+import { filterMap, Streamify, reduce, TargetKeyboardEvent, createHandler } from '../../../../utils';
 import * as React from 'react';
 import { TaskValue } from '../../../task/components/task/task.component';
 import { none, some } from 'fp-ts/lib/Option';
@@ -9,7 +9,7 @@ type Props = {
 };
 
 export const Header = (props: Streamify<Props>) => {
-	const [handleNewKeyUp, newKeyUpEvent] = createHandler<TargetKeyboardEvent<HTMLInputElement>>();
+	const handleNewKeyUp = createHandler<TargetKeyboardEvent<HTMLInputElement>>();
 
 	const vdom = Stream.of(
 		<header className={'header'}>
@@ -27,7 +27,7 @@ export const Header = (props: Streamify<Props>) => {
 
 	const value = reduce(
 		props.tasks,
-		newKeyUpEvent
+		handleNewKeyUp
 			.filter(e => e.keyCode === 13)
 			.compose(
 				filterMap(e => {

@@ -17,7 +17,7 @@ const update = (value: TaskValue, i: number) => (tasks: TaskValue[]) => unsafeUp
 
 export const Main = (props: Streamify<Props>) => {
 	const toggleAllId = randomId('toggle-all-');
-	const [handleToggleAllChange, toggleAllChangeEvent] = createHandler<ChangeEvent<HTMLInputElement>>();
+	const handleToggleAllChange = createHandler<ChangeEvent<HTMLInputElement>>();
 
 	const tasks = collection(props.tasks, Task, itemKey, children => {
 		const vdom = children.compose(pickCombineAll('vdom'));
@@ -56,7 +56,7 @@ export const Main = (props: Streamify<Props>) => {
 		tasks.value,
 		reduce(
 			props.tasks,
-			K(toggleAllChangeEvent, e => e.target.checked).map(completed => tasks =>
+			K(handleToggleAllChange, e => e.target.checked).map(completed => tasks =>
 				tasks.map(task => ({ ...task, completed })),
 			),
 		),

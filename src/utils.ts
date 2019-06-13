@@ -1,4 +1,4 @@
-import { Endomorphism } from 'fp-ts/lib/function';
+import { constVoid, Endomorphism } from 'fp-ts/lib/function';
 import { createElement, Fragment, KeyboardEvent, ReactElement } from 'react';
 
 import {
@@ -44,17 +44,26 @@ export const K: ProductMap<'Stream'> = <A, R>(...args: Array<Stream<A> | Project
 		.compose(dropRepeats());
 };
 
-export const createHandler = <A = never>(): [(a: A) => void, Stream<A>] => {
-	const s = xs.create<A>();
-	const next = (a: A) => s.shamefullySendNext(a);
-	return [next, s];
+export interface Handler<A> extends Stream<A> {
+	(a: A): void;
+}
+
+const functionKeys: PropertyKey[] = Object.getOwnPropertyNames(Object.getPrototypeOf(constVoid));
+export const createHandler = <A = never>(): Handler<A> => {
+	const source = xs.create<A>();
+	const next = (a: A) => source.shamefullySendNext(a);
+	return new Proxy(next, {
+		get(target, key) {
+			return ((functionKeys.includes(key) ? next : source) as any)[key];
+		},
+	}) as any;
 };
 
 export const createValue = <A>(initial: A): [(a: A) => void, Stream<A>] => {
-	const [next, s] = createHandler<A>();
+	const handler = createHandler<A>();
 	return [
-		next,
-		s
+		handler,
+		handler
 			.startWith(initial)
 			.compose(dropRepeats())
 			.remember(),

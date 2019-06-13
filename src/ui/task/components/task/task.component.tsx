@@ -1,4 +1,4 @@
-import { K, Streamify, reduce, TargetKeyboardEvent, createHandler, createValue } from '../../../../utils';
+import { K, Streamify, reduce, TargetKeyboardEvent, createHandler } from '../../../../utils';
 import * as React from 'react';
 import cx from 'classnames';
 import { ChangeEvent, createRef, FocusEvent, MouseEvent } from 'react';
@@ -27,14 +27,14 @@ type Props = {
 
 export const Task = (props: Streamify<Props>) => {
 	const editInputRef = createRef<HTMLInputElement>();
-	const [handleDestroyClick, destroyClickEvent] = createHandler<MouseEvent<HTMLButtonElement>>();
-	const [handleToggleChange, toggleChangeEvent] = createHandler<ChangeEvent<HTMLInputElement>>();
-	const [handleTitleDoubleClick, titleDoubleClick] = createHandler<MouseEvent<HTMLLabelElement>>();
-	const [handleEditKeyUp, editKeyUpEvent] = createHandler<TargetKeyboardEvent<HTMLInputElement>>();
-	const [handleEditBlur, editBlurEvent] = createHandler<FocusEvent<HTMLInputElement>>();
-	const [handleEditChange, editChangeEvent] = createHandler<ChangeEvent<HTMLInputElement>>();
+	const handleDestroyClick = createHandler<MouseEvent<HTMLButtonElement>>();
+	const handleToggleChange = createHandler<ChangeEvent<HTMLInputElement>>();
+	const handleTitleDoubleClick = createHandler<MouseEvent<HTMLLabelElement>>();
+	const handleEditKeyUp = createHandler<TargetKeyboardEvent<HTMLInputElement>>();
+	const handleEditBlur = createHandler<FocusEvent<HTMLInputElement>>();
+	const handleEditChange = createHandler<ChangeEvent<HTMLInputElement>>();
 
-	const title = xs.merge(K(editChangeEvent, e => e.target.value), K(props.value, value => value.title));
+	const title = xs.merge(K(handleEditChange, e => e.target.value), K(props.value, value => value.title));
 
 	const vdom = K(props.value, title, ({ completed, editing }, title) => {
 		const todoRootClassName = cx('todoRoot', {
@@ -66,20 +66,20 @@ export const Task = (props: Streamify<Props>) => {
 	const setEditingTrue = editingLens.set(true);
 	const setEditingFalse = editingLens.set(false);
 
-	const destroy = destroyClickEvent.map(constVoid);
-	const enterKeyUp = editKeyUpEvent.filter(e => e.keyCode === ENTER_KEY);
+	const destroy = handleDestroyClick.map(constVoid);
+	const enterKeyUp = handleEditKeyUp.filter(e => e.keyCode === ENTER_KEY);
 
 	const value = reduce(
 		props.value,
-		titleDoubleClick.mapTo(setEditingTrue),
-		editKeyUpEvent.filter(e => e.keyCode === ESC_KEY).mapTo(setEditingTrue),
-		toggleChangeEvent
+		handleTitleDoubleClick.mapTo(setEditingTrue),
+		handleEditKeyUp.filter(e => e.keyCode === ESC_KEY).mapTo(setEditingTrue),
+		handleToggleChange
 			.map(e => e.target.checked)
 			.compose(dropRepeats())
 			.map(completedLens.set),
-		xs.merge(enterKeyUp, editBlurEvent).mapTo(setEditingFalse),
+		xs.merge(enterKeyUp, handleEditBlur).mapTo(setEditingFalse),
 		xs
-			.merge(enterKeyUp, editBlurEvent)
+			.merge(enterKeyUp, handleEditBlur)
 			.compose(sampleCombine(title))
 			.map(([_, n]) => titleLens.set(n)),
 	);
