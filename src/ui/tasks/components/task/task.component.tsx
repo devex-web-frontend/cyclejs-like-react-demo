@@ -3,23 +3,13 @@ import * as React from 'react';
 import cx from 'classnames';
 import { ChangeEvent, createRef, FocusEvent, MouseEvent } from 'react';
 import { constVoid } from 'fp-ts/lib/function';
-import { Lens } from 'monocle-ts';
 import xs from 'xstream';
 import dropRepeats from 'xstream/extra/dropRepeats';
 import sampleCombine from 'xstream/extra/sampleCombine';
+import { completedLens, editingLens, TaskValue, titleLens } from '../../model/tasks.model';
 
 const ESC_KEY = 27;
 const ENTER_KEY = 13;
-
-export type TaskValue = {
-	title: string;
-	completed: boolean;
-	editing: boolean;
-};
-
-const completedLens = Lens.fromProp<TaskValue>()('completed');
-const editingLens = Lens.fromProp<TaskValue>()('editing');
-const titleLens = Lens.fromProp<TaskValue>()('title');
 
 type Props = {
 	value: TaskValue;

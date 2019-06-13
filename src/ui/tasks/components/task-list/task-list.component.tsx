@@ -6,12 +6,12 @@ import * as React from 'react';
 import { Header } from '../header/header.component';
 import { Main } from '../main/main.component';
 import { Footer } from '../footer/footer.component';
-import { TaskValue } from '../task/task.component';
 import xs from 'xstream';
 import { Location } from 'history';
 import { combineReader } from '@devexperts/utils/dist/adt/reader.utils';
+import { Tasks } from '../../model/tasks.model';
 
-const TASKS: TaskValue[] = [
+const TASKS: Tasks = [
 	{
 		completed: false,
 		editing: false,

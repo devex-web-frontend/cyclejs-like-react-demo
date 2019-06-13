@@ -1,13 +1,13 @@
 import * as React from 'react';
 import { createHandler, K, reduce, streamify, Streamify } from '../../../../utils/utils';
 import { MouseEvent } from 'react';
-import { TaskValue } from '../task/task.component';
 import { Location } from 'history';
 import { combineReader } from '@devexperts/utils/dist/adt/reader.utils';
 import { LinkContainer } from '../../../ui-kit/containers/link.container';
+import { Tasks } from '../../model/tasks.model';
 
 type Props = {
-	tasks: TaskValue[];
+	tasks: Tasks;
 	location: Location;
 };
 

@@ -1,11 +1,11 @@
 import { filterMap, Streamify, reduce, TargetKeyboardEvent, createHandler } from '../../../../utils/utils';
 import * as React from 'react';
-import { TaskValue } from '../task/task.component';
 import { none, some } from 'fp-ts/lib/Option';
 import { Stream } from 'xstream';
+import { Tasks } from '../../model/tasks.model';
 
 type Props = {
-	tasks: TaskValue[];
+	tasks: Tasks;
 };
 
 export const Header = (props: Streamify<Props>) => {
