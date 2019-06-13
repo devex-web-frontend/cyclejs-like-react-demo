@@ -20,7 +20,7 @@ export const TaskListContainer = combineReader(
 	ask<TaskListContainerContext>(),
 	(TaskList, tasksService, { location }) => (props: Props) => {
 		const local = createHandler<Tasks>();
-		const tasks = xs.merge(tasksService.load(), local).remember();
+		const tasks = xs.merge(tasksService.data, local).remember();
 
 		const { vdom, value } = TaskList({
 			...props,

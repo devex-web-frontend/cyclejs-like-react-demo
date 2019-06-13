@@ -10,6 +10,11 @@ type TasksServiceContext = {
 	storage: Storage;
 };
 
+type TasksService = {
+	data: MemoryStream<Data>;
+	save(value: Data): void;
+};
+
 const task = type({
 	editing: boolean,
 	completed: boolean,
@@ -20,16 +25,18 @@ const STORAGE_KEY = 'STORAGE_KEY';
 
 const codec = string.pipe(JSONFromString).pipe(tasks);
 
+type Data = TypeOf<typeof codec>;
+
 const event = fromEvent<StorageEvent>(window, 'storage')
 	.filter(e => e.key === STORAGE_KEY)
 	.compose(filterMap(e => fromEither(codec.decode(e.newValue))));
 
-export const tasksService = combineReader(ask<TasksServiceContext>(), ({ storage }) => {
-	const load = (): MemoryStream<TypeOf<typeof codec>> =>
-		event.startWith(codec.decode(storage.getItem(STORAGE_KEY)).getOrElse([])).remember();
-	const save = (value: TypeOf<typeof codec>) => storage.setItem(STORAGE_KEY, string.pipe(codec).encode(value));
-	return {
-		load,
-		save,
-	};
-});
+export const tasksService = combineReader(
+	ask<TasksServiceContext>(),
+	({ storage }): TasksService => {
+		return {
+			data: event.startWith(codec.decode(storage.getItem(STORAGE_KEY)).getOrElse([])).remember(),
+			save: data => storage.setItem(STORAGE_KEY, codec.encode(data)),
+		};
+	},
+);
