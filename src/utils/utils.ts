@@ -11,6 +11,8 @@ import dropRepeats from 'xstream/extra/dropRepeats';
 import sampleCombine from 'xstream/extra/sampleCombine';
 import { map } from 'fp-ts/lib/Record';
 import { Reader } from 'fp-ts/lib/Reader';
+import { JSONFromString as IOTSJSONFromString, JSONType } from 'io-ts-types/lib/JSON/JSONFromString';
+import { Type } from 'io-ts';
 
 export type Operator<A, B> = (source: Stream<A>) => Stream<B>;
 
@@ -165,3 +167,5 @@ export const pickMergeMapAll = <B, K extends keyof O, O extends { [P in K]: Stre
 
 export type First<A extends [any, ...any[]]> = A extends [infer F, ...any[]] ? F : never;
 export type ReaderValueType<R extends Reader<any, any>> = R extends Reader<any, infer A> ? A : never;
+
+export const JSONFromString: Type<JSONType, string, string> = IOTSJSONFromString as any;

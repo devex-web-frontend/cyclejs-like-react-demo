@@ -6,6 +6,7 @@ import { Omit } from 'typelevel-ts';
 import { createValue, First, ReaderValueType } from '../../../utils/utils';
 import { Stream } from 'xstream';
 import { Tasks } from '../model/tasks.model';
+import { tasksService } from '../../../services/tasks.service';
 
 type TaskListContainerContext = {
 	location: Stream<Location>;
@@ -28,15 +29,19 @@ const TASKS: Tasks = [
 
 export const TaskListContainer = combineReader(
 	TaskList,
+	tasksService,
 	ask<TaskListContainerContext>(),
-	(TaskList, { location }) => (props: Props) => {
-		const [setTasks, tasks] = createValue(TASKS);
+	(TaskList, tasksService, { location }) => (props: Props) => {
+		const [setTasks, tasks] = createValue(tasksService.load());
 		const { vdom, value } = TaskList({
 			...props,
 			location,
 			tasks,
 		});
-		const effect = value.map(setTasks);
+		const effect = value.map(value => {
+			setTasks(value);
+			tasksService.save(value);
+		});
 		return {
 			vdom,
 			effect,
