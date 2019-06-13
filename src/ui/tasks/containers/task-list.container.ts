@@ -5,7 +5,6 @@ import { combineReader } from '@devexperts/utils/dist/adt/reader.utils';
 import { Omit } from 'typelevel-ts';
 import { createValue, First, ReaderValueType } from '../../../utils/utils';
 import { Stream } from 'xstream';
-import { Tasks } from '../model/tasks.model';
 import { tasksService } from '../../../services/tasks.service';
 
 type TaskListContainerContext = {
@@ -13,19 +12,6 @@ type TaskListContainerContext = {
 };
 
 type Props = Omit<First<Parameters<ReaderValueType<typeof TaskList>>>, 'location' | 'tasks'>;
-
-const TASKS: Tasks = [
-	{
-		completed: false,
-		editing: false,
-		title: 'foo',
-	},
-	{
-		completed: false,
-		editing: false,
-		title: 'bla',
-	},
-];
 
 export const TaskListContainer = combineReader(
 	TaskList,
