@@ -32,8 +32,8 @@ export const TaskList = combineReader(Footer, Footer => (props: Streamify<Props>
 	const [setTasks, tasks] = createValue(TASKS);
 	const { location } = props;
 
-	const active = K(tasks, tasks => tasks.filter(task => !task.completed)).remember();
-	const completed = K(tasks, tasks => tasks.filter(task => task.completed)).remember();
+	const active = K(tasks, getActive).remember();
+	const completed = K(tasks, getCompleted).remember();
 
 	const filtered = K(tasks, active, completed, location, (tasks, active, completed, location) => {
 		switch (location.pathname) {
