@@ -9,7 +9,8 @@ import { Footer } from '../footer/footer.component';
 import xs from 'xstream';
 import { Location } from 'history';
 import { combineReader } from '@devexperts/utils/dist/adt/reader.utils';
-import { Tasks } from '../../model/tasks.model';
+import { getActive, getCompleted, Tasks } from '../../model/tasks.model';
+import { identity } from 'fp-ts/lib/function';
 
 const TASKS: Tasks = [
 	{
@@ -29,28 +30,35 @@ type Props = {
 };
 
 export const TaskList = combineReader(Footer, Footer => (props: Streamify<Props>) => {
-	const [setTasks, local] = createValue(TASKS);
+	const [setTasks, tasks] = createValue(TASKS);
+	const { location } = props;
 
-	const tasks = K(local, props.location, (tasks, location) => {
+	const active = K(tasks, tasks => tasks.filter(task => !task.completed)).remember();
+	const completed = K(tasks, tasks => tasks.filter(task => task.completed)).remember();
+
+	const filter = K(tasks, active, completed, location, (tasks, active, completed, location) => {
 		switch (location.pathname) {
 			case '/active': {
-				return tasks.filter(task => !task.completed);
+				return getActive;
 			}
 			case '/completed': {
-				return tasks.filter(task => task.completed);
+				return getCompleted;
 			}
 			default: {
-				return tasks;
+				return identity;
 			}
 		}
 	}).remember();
 
 	const header = Header({ tasks });
 
-	const main = Main({ tasks });
-	const footer = Footer({ tasks, location: props.location });
+	const main = Main({ tasks, filter });
+
+	const activeCount = K(active, active => active.length).remember();
+	const completedCount = K(completed, completed => completed.length).remember();
+	const footer = Footer({ tasks, location, activeCount, completedCount });
 	const vdom = K(header.vdom, main.vdom, footer.vdom, (header, main, footer) => (
-		<div>
+		<div className={'todoapp'}>
 			{header}
 			{main}
 			{footer}
