@@ -4,7 +4,6 @@ import cx from 'classnames';
 import { ChangeEvent, createRef, FocusEvent, MouseEvent } from 'react';
 import { constVoid } from 'fp-ts/lib/function';
 import xs from 'xstream';
-import dropRepeats from 'xstream/extra/dropRepeats';
 import sampleCombine from 'xstream/extra/sampleCombine';
 import { setCompleted, setEditing, setTitle, TaskValue } from '../../model/task.model';
 
