@@ -10,7 +10,6 @@ import xs from 'xstream';
 import { Location } from 'history';
 import { combineReader } from '@devexperts/utils/dist/adt/reader.utils';
 import { getActive, getCompleted, Tasks } from '../../model/tasks.model';
-import { identity } from 'fp-ts/lib/function';
 
 const TASKS: Tasks = [
 	{
@@ -36,23 +35,23 @@ export const TaskList = combineReader(Footer, Footer => (props: Streamify<Props>
 	const active = K(tasks, tasks => tasks.filter(task => !task.completed)).remember();
 	const completed = K(tasks, tasks => tasks.filter(task => task.completed)).remember();
 
-	const filter = K(tasks, active, completed, location, (tasks, active, completed, location) => {
+	const filtered = K(tasks, active, completed, location, (tasks, active, completed, location) => {
 		switch (location.pathname) {
 			case '/active': {
-				return getActive;
+				return getActive(tasks);
 			}
 			case '/completed': {
-				return getCompleted;
+				return getCompleted(tasks);
 			}
 			default: {
-				return identity;
+				return tasks;
 			}
 		}
 	}).remember();
 
 	const header = Header({ tasks });
 
-	const main = Main({ tasks, filter });
+	const main = Main({ tasks, filtered });
 
 	const activeCount = K(active, active => active.length).remember();
 	const completedCount = K(completed, completed => completed.length).remember();

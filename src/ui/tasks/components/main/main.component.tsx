@@ -17,7 +17,7 @@ import { TaskValue } from '../../model/task.model';
 
 type Props = {
 	tasks: Tasks;
-	filter: (tasks: Tasks) => Tasks;
+	filtered: Tasks;
 };
 
 const itemKey = (task: TaskValue, i: number): string => `item-${i}`;
@@ -26,8 +26,7 @@ export const Main = (props: Streamify<Props>) => {
 	const toggleAllId = randomId('toggle-all-');
 	const handleToggleAllChange = createHandler<ChangeEvent<HTMLInputElement>>();
 
-	const filtered = K(props.tasks, props.filter, (tasks, filter) => filter(tasks)).remember();
-	const tasks = collection(filtered, Task, itemKey, children => {
+	const tasks = collection(props.filtered, Task, itemKey, children => {
 		const vdom = children.compose(pickCombineAll('vdom'));
 
 		const value = reduce(
