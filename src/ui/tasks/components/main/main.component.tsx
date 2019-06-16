@@ -41,7 +41,7 @@ export const Main = (props: Streamify<Props>) => {
 		};
 	});
 
-	const allCompleted = K(props.tasks, areAllCompleted).remember();
+	const allCompleted = K(props.tasks, areAllCompleted);
 
 	const vdom = K(tasks.vdom, allCompleted, (tasksVdom, allCompleted) => {
 		return (

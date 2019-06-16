@@ -6,7 +6,7 @@ import {
 	ProjectMany,
 } from '@devexperts/utils/dist/typeclasses/product-left-coproduct-left/product-left-coproduct-left.utils';
 import { isSome, Option, some, none } from 'fp-ts/lib/Option';
-import xs, { Stream } from 'xstream';
+import xs, { Stream, MemoryStream } from 'xstream';
 import dropRepeats from 'xstream/extra/dropRepeats';
 import sampleCombine from 'xstream/extra/sampleCombine';
 import { map } from 'fp-ts/lib/Record';
@@ -47,13 +47,14 @@ declare module 'fp-ts/lib/HKT' {
 	}
 }
 
-export const K: ProductMap<'Stream'> = <A, R>(...args: Array<Stream<A> | ProjectMany<A, R>>): Stream<R> => {
+export const K: ProductMap<'Stream'> = <A, R>(...args: Array<Stream<A> | ProjectMany<A, R>>): MemoryStream<R> => {
 	const streams = args.slice(0, -1) as Stream<A>[];
 	const project = args[args.length - 1] as ProjectMany<A, R>;
 	return xs
 		.combine(...streams)
 		.map(args => project(...args))
-		.compose(dropRepeats());
+		.compose(dropRepeats())
+		.remember();
 };
 
 export interface Handler<A> extends Stream<A> {

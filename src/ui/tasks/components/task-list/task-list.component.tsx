@@ -19,8 +19,8 @@ type Props = {
 export const TaskList = combineReader(Footer, Footer => (props: Streamify<Props>) => {
 	const { location, tasks } = props;
 
-	const active = K(tasks, getActive).remember();
-	const completed = K(tasks, getCompleted).remember();
+	const active = K(tasks, getActive);
+	const completed = K(tasks, getCompleted);
 
 	const filtered = K(tasks, active, completed, location, (tasks, active, completed, location) => {
 		switch (location.pathname) {
@@ -34,14 +34,14 @@ export const TaskList = combineReader(Footer, Footer => (props: Streamify<Props>
 				return tasks;
 			}
 		}
-	}).remember();
+	});
 
 	const header = Header({ tasks });
 
 	const main = Main({ tasks, filtered });
 
-	const activeCount = K(active, active => active.length).remember();
-	const completedCount = K(completed, completed => completed.length).remember();
+	const activeCount = K(active, active => active.length);
+	const completedCount = K(completed, completed => completed.length);
 	const footer = Footer({ tasks, location, activeCount, completedCount });
 	const vdom = K(header.vdom, main.vdom, footer.vdom, (header, main, footer) => (
 		<div className={'todoapp'}>
