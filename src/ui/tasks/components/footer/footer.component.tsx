@@ -5,6 +5,9 @@ import { Location } from 'history';
 import { combineReader } from '@devexperts/utils/dist/adt/reader.utils';
 import { LinkContainer } from '../../../ui-kit/containers/link.container';
 import { removeCompleted, Tasks } from '../../model/tasks.model';
+import pipe from 'callbag-pipe';
+import { constant } from 'fp-ts/lib/function';
+import map from 'callbag-map';
 
 type Props = {
 	tasks: Tasks;
@@ -39,6 +42,7 @@ const Filters = combineReader(LinkContainer, LinkContainer => () => {
 			<li>{completed}</li>
 		</ul>
 	));
+
 	return { vdom };
 });
 
@@ -68,7 +72,13 @@ export const Footer = combineReader(Filters, Filters => (props: Streamify<Props>
 		),
 	);
 
-	const value = reduce(props.tasks, handleClearCompletedClick.mapTo(removeCompleted));
+	const value = reduce(
+		props.tasks,
+		pipe(
+			handleClearCompletedClick.source,
+			map(constant(removeCompleted)),
+		),
+	);
 
 	return {
 		vdom,

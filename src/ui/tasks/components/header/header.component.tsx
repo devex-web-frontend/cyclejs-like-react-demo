@@ -1,8 +1,11 @@
 import { filterMap, Streamify, reduce, TargetKeyboardEvent, createHandler } from '../../../../utils/utils';
 import * as React from 'react';
 import { none, some } from 'fp-ts/lib/Option';
-import { Stream } from 'xstream';
 import { Tasks } from '../../model/tasks.model';
+import pipe from 'callbag-pipe';
+import filter from 'callbag-filter';
+import map from 'callbag-map';
+import of from 'callbag-of';
 
 type Props = {
 	tasks: Tasks;
@@ -11,7 +14,7 @@ type Props = {
 export const Header = (props: Streamify<Props>) => {
 	const handleNewKeyUp = createHandler<TargetKeyboardEvent<HTMLInputElement>>();
 
-	const vdom = Stream.of(
+	const vdom = of(
 		<header className={'header'}>
 			<h1 className={'todos'}>todos</h1>
 			<input
@@ -27,19 +30,19 @@ export const Header = (props: Streamify<Props>) => {
 
 	const value = reduce(
 		props.tasks,
-		handleNewKeyUp
-			.filter(e => e.keyCode === 13)
-			.compose(
-				filterMap(e => {
-					const value = e.target.value.trim();
-					if (value !== '') {
-						e.target.value = '';
-						return some(value);
-					}
-					return none;
-				}),
-			)
-			.map(title => s => [{ title, editing: false, completed: false }, ...s]),
+		pipe(
+			handleNewKeyUp.source,
+			filter(e => e.keyCode === 13),
+			filterMap(e => {
+				const value = e.target.value.trim();
+				if (value !== '') {
+					e.target.value = '';
+					return some(value);
+				}
+				return none;
+			}),
+			map(title => s => [{ title, editing: false, completed: false }, ...s]),
+		),
 	);
 
 	return {

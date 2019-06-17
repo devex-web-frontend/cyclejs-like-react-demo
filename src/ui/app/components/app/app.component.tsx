@@ -1,7 +1,12 @@
 import { memo, ReactElement, useEffect, useMemo, useState, ComponentType } from 'react';
-import xs from 'xstream';
 import { combineReader } from '@devexperts/utils/dist/adt/reader.utils';
 import { TaskListContainer } from '../../../tasks/containers/task-list.container';
+import merge from 'callbag-merge';
+import map from 'callbag-map';
+import pipe from 'callbag-pipe';
+import { constVoid } from 'fp-ts/lib/function';
+import { END, START } from '../../../../utils/utils';
+import tap from 'callbag-tap';
 
 export const App = combineReader(
 	TaskListContainer,
@@ -10,11 +15,16 @@ export const App = combineReader(
 			const [state, setState] = useState<ReactElement>();
 			const taskListContainer = useMemo(() => TaskListContainer({}), [TaskListContainer]);
 			useEffect(() => {
-				const subscription = xs
-					.merge(taskListContainer.vdom.map(setState), taskListContainer.effect)
-					.subscribe({});
-				return () => subscription.unsubscribe();
-			}, []);
+				const sink = merge(
+					pipe(
+						taskListContainer.vdom,
+						map(setState),
+					),
+					taskListContainer.effect,
+				);
+				sink(START, constVoid);
+				return () => sink(END);
+			}, [taskListContainer.vdom, taskListContainer.effect]);
 			return state || null;
 		}),
 );

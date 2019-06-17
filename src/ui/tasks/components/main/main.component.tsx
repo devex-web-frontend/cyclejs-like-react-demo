@@ -11,9 +11,11 @@ import * as React from 'react';
 import { randomId } from '@devexperts/utils/dist/string';
 import { Task } from '../task/task.component';
 import { ChangeEvent } from 'react';
-import xs from 'xstream';
 import { areAllCompleted, deleteAt, Tasks, toggleAllCompleted, updateAt } from '../../model/tasks.model';
 import { TaskValue } from '../../model/task.model';
+import pipe from 'callbag-pipe';
+import merge from 'callbag-merge';
+import map from 'callbag-map';
 
 type Props = {
 	tasks: Tasks;
@@ -27,12 +29,21 @@ export const Main = (props: Streamify<Props>) => {
 	const handleToggleAllChange = createHandler<ChangeEvent<HTMLInputElement>>();
 
 	const tasks = collection(props.filtered, Task, itemKey, children => {
-		const vdom = children.compose(pickCombineAll('vdom'));
+		const vdom = pipe(
+			children,
+			pickCombineAll('vdom'),
+		);
 
 		const value = reduce(
 			props.tasks,
-			children.compose(pickMergeMapAll('destroy', (_, i) => deleteAt(i))),
-			children.compose(pickMergeMapAll('value', (task, i) => updateAt(i, task))),
+			pipe(
+				children,
+				pickMergeMapAll('destroy', (_, i) => deleteAt(i)),
+			),
+			pipe(
+				children,
+				pickMergeMapAll('value', (task, i) => updateAt(i, task)),
+			),
 		);
 
 		return {
@@ -59,9 +70,15 @@ export const Main = (props: Streamify<Props>) => {
 		);
 	});
 
-	const value = xs.merge(
+	const value = merge(
 		tasks.value,
-		reduce(props.tasks, K(handleToggleAllChange, e => e.target.checked).map(toggleAllCompleted)),
+		reduce(
+			props.tasks,
+			pipe(
+				handleToggleAllChange.source,
+				map(e => toggleAllCompleted(e.target.checked)),
+			),
+		),
 	);
 
 	return {

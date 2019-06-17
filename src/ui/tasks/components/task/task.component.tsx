@@ -2,10 +2,14 @@ import { K, Streamify, reduce, TargetKeyboardEvent, createHandler } from '../../
 import * as React from 'react';
 import cx from 'classnames';
 import { ChangeEvent, createRef, FocusEvent, MouseEvent } from 'react';
-import { constVoid } from 'fp-ts/lib/function';
-import xs from 'xstream';
-import sampleCombine from 'xstream/extra/sampleCombine';
+import { constant, constVoid } from 'fp-ts/lib/function';
 import { setCompleted, setEditing, setTitle, TaskValue } from '../../model/task.model';
+import merge from 'callbag-merge';
+import pipe from 'callbag-pipe';
+import map from 'callbag-map';
+import filter from 'callbag-filter';
+import sampleCombine from 'callbag-sample-combine';
+import latest from 'callbag-latest';
 
 const ESC_KEY = 27;
 const ENTER_KEY = 13;
@@ -23,7 +27,7 @@ export const Task = (props: Streamify<Props>) => {
 	const handleEditBlur = createHandler<FocusEvent<HTMLInputElement>>();
 	const handleEditChange = createHandler<ChangeEvent<HTMLInputElement>>();
 
-	const title = xs.merge(K(handleEditChange, e => e.target.value), K(props.value, value => value.title));
+	const title = merge(K(handleEditChange.source, e => e.target.value), K(props.value, value => value.title));
 
 	const vdom = K(props.value, title, ({ completed, editing }, title) => {
 		const todoRootClassName = cx('todoRoot', {
@@ -52,19 +56,40 @@ export const Task = (props: Streamify<Props>) => {
 		);
 	});
 
-	const destroy = handleDestroyClick.map(constVoid);
-	const enterKeyUp = handleEditKeyUp.filter(e => e.keyCode === ENTER_KEY);
+	const destroy = pipe(
+		handleDestroyClick.source,
+		map(constVoid),
+	);
+	const enterKeyUp = pipe(
+		handleEditKeyUp.source,
+		filter(e => e.keyCode === ENTER_KEY),
+	);
 
 	const value = reduce(
 		props.value,
-		handleTitleDoubleClick.mapTo(setEditing(true)),
-		handleEditKeyUp.filter(e => e.keyCode === ESC_KEY).mapTo(setEditing(true)),
-		handleToggleChange.map(e => e.target.checked).map(setCompleted),
-		xs.merge(enterKeyUp, handleEditBlur).mapTo(setEditing(false)),
-		xs
-			.merge(enterKeyUp, handleEditBlur)
-			.compose(sampleCombine(title))
-			.map(([_, title]) => setTitle(title)),
+		pipe(
+			handleTitleDoubleClick.source,
+			map(constant(setEditing(true))),
+		),
+		pipe(
+			handleEditKeyUp.source,
+			filter(e => e.keyCode === ESC_KEY),
+			map(constant(setEditing(true))),
+		),
+		pipe(
+			handleToggleChange.source,
+			map(e => e.target.checked),
+			map(setCompleted),
+		),
+		pipe(
+			merge(enterKeyUp, handleEditBlur.source),
+			map(constant(setEditing(false))),
+		),
+		pipe(
+			merge(enterKeyUp, handleEditBlur.source),
+			sampleCombine(latest(title)),
+			map(([_, title]) => setTitle(title)),
+		),
 	);
 
 	return { vdom, value, destroy };

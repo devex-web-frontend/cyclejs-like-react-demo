@@ -1,13 +1,13 @@
-import xs, { Stream } from 'xstream';
 import { ask } from 'fp-ts/lib/Reader';
 import { Link } from '../components/link/link.component';
 import { First, K } from '../../../utils/utils';
 import { combineReader } from '@devexperts/utils/dist/adt/reader.utils';
 import { Omit } from 'typelevel-ts';
 import { Location } from 'history';
+import { Source } from 'callbag';
 
 type LinkContainerContext = {
-	location: Stream<Location>;
+	location: Source<Location>;
 };
 
 type Props = Omit<First<Parameters<typeof Link>>, 'isActive'>;
