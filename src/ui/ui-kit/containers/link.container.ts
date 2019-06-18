@@ -1,4 +1,4 @@
-import xs, { Stream } from 'xstream';
+import { Stream } from 'xstream';
 import { ask } from 'fp-ts/lib/Reader';
 import { Link } from '../components/link/link.component';
 import { First, K } from '../../../utils/utils';

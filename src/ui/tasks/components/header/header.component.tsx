@@ -3,6 +3,7 @@ import * as React from 'react';
 import { none, some } from 'fp-ts/lib/Option';
 import { Stream } from 'xstream';
 import { Tasks } from '../../model/tasks.model';
+import { createTaskValue } from '../../model/task.model';
 
 type Props = {
 	tasks: Tasks;
@@ -39,7 +40,7 @@ export const Header = (props: Streamify<Props>) => {
 					return none;
 				}),
 			)
-			.map(title => s => [{ title, editing: false, completed: false }, ...s]),
+			.map(title => s => [createTaskValue(title, false, false), ...s]),
 	);
 
 	return {

@@ -9,3 +9,6 @@ export const areAllCompleted = (tasks: Tasks): boolean => tasks.length > 0 && ta
 export const toggleAllCompleted = (completed: boolean) => (tasks: Tasks): Tasks => tasks.map(setCompleted(completed));
 export const getActive = (tasks: Tasks): Tasks => tasks.filter(task => !task.completed);
 export const getCompleted = (tasks: Tasks): Tasks => tasks.filter(task => task.completed);
+export const remove = (value: TaskValue) => (tasks: Tasks): Tasks => tasks.filter(task => task !== value);
+export const replace = (oldValue: TaskValue) => (newValue: TaskValue) => (tasks: Tasks): Tasks =>
+	tasks.filter(task => (task === oldValue ? newValue : oldValue));
