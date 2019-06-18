@@ -83,10 +83,19 @@ export interface TargetKeyboardEvent<T = Element> extends KeyboardEvent<T> {
 	target: EventTarget & T;
 }
 
+type ChildInputs<A> = {
+	value: Stream<A>;
+};
+
 type ChildOutput<A> = {
 	vdom: Stream<ReactElement>;
 	value?: Stream<A>;
 	destroy?: Stream<void>;
+};
+
+type CollectionOutput<A> = {
+	vdom: Stream<ReactElement[]>;
+	reducers: Stream<Endomorphism<A[]>>;
 };
 
 /**
@@ -95,9 +104,9 @@ type ChildOutput<A> = {
  */
 export const collection = <A, O extends ChildOutput<A>, R>(
 	source: Stream<A[]>,
-	Item: (props: Streamify<{ value: A }>) => O,
+	Item: (props: ChildInputs<A>) => O,
 	itemKey: (a: A, i: number) => string,
-): Streamify<{ vdom: ReactElement[]; reducers: Endomorphism<A[]> }> => {
+): CollectionOutput<A> => {
 	type Stored = {
 		nextValue: (a: A) => void;
 		child: O;
@@ -164,7 +173,11 @@ export const collection = <A, O extends ChildOutput<A>, R>(
 		{ storage: new Map(), result: [] },
 	);
 
-	const vdom: Stream<ReactElement[]> = state.map(state => state.result).compose(pickCombineAll('vdom')) as any;
+	const vdom = state
+		.map(state =>
+			state.result.length === 0 ? xs.of<ReactElement[]>([]) : xs.combine(...state.result.map(o => o.vdom)),
+		)
+		.flatten();
 
 	const reducers = state
 		.map(state => {
@@ -178,21 +191,6 @@ export const collection = <A, O extends ChildOutput<A>, R>(
 		reducers,
 	};
 };
-
-export type StreamValueType<S extends Stream<any>> = S extends Stream<infer A> ? A : never;
-
-export const pickCombineAll = <K extends keyof O, O extends { [P in K]: Stream<any> }>(key: K) => (
-	source: Stream<O[]>,
-): Stream<StreamValueType<O[K]>[]> =>
-	source
-		.map(os => (os.length === 0 ? xs.of<StreamValueType<O[K]>[]>([]) : xs.combine(...os.map(o => o[key]))))
-		.flatten();
-
-export const pickMergeMapAll = <B, K extends keyof O, O extends { [P in K]: Stream<any> }>(
-	key: K,
-	f: (a: StreamValueType<O[K]>, i: number) => B,
-) => (source: Stream<O[]>): Stream<B> =>
-	source.map(os => xs.merge(...os.map((o, i) => o[key].map(a => f(a, i))))).flatten();
 
 export type First<A extends [any, ...any[]]> = A extends [infer F, ...any[]] ? F : never;
 export type ReaderValueType<R extends Reader<any, any>> = R extends Reader<any, infer A> ? A : never;
