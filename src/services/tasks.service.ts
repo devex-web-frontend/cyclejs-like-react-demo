@@ -21,6 +21,7 @@ type TasksService = {
 };
 
 const task = type({
+	id: string,
 	editing: boolean,
 	completed: boolean,
 	title: string,

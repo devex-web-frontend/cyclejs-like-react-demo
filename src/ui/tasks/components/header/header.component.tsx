@@ -1,11 +1,12 @@
 import { filterMap, Streamify, reduce, TargetKeyboardEvent, createHandler } from '../../../../utils/utils';
 import * as React from 'react';
 import { none, some } from 'fp-ts/lib/Option';
-import { Tasks } from '../../model/tasks.model';
+import { prepend, Tasks } from '../../model/tasks.model';
 import pipe from 'callbag-pipe';
 import filter from 'callbag-filter';
 import map from 'callbag-map';
 import of from 'callbag-of';
+import { createTaskValue, TaskValue } from '../../model/task.model';
 
 type Props = {
 	tasks: Tasks;
@@ -41,7 +42,7 @@ export const Header = (props: Streamify<Props>) => {
 				}
 				return none;
 			}),
-			map(title => s => [{ title, editing: false, completed: false }, ...s]),
+			map(title => prepend(createTaskValue(title, false, false))),
 		),
 	);
 

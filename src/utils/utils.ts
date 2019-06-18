@@ -1,4 +1,4 @@
-import { constVoid, Endomorphism } from 'fp-ts/lib/function';
+import { Endomorphism } from 'fp-ts/lib/function';
 import { createElement, Fragment, KeyboardEvent, ReactElement } from 'react';
 
 import {
@@ -26,6 +26,7 @@ import remember from 'callbag-remember';
 import scan from 'callbag-scan';
 import flatten from 'callbag-flatten';
 import { History, Location } from 'history';
+import share from 'callbag-share';
 
 export type Operator<A, B> = (source: Source<A>) => Source<B>;
 
@@ -41,6 +42,7 @@ export const reduce = <A>(a: Source<A>, ...reducers: Source<Endomorphism<A>>[]):
 		merge(...reducers),
 		sampleCombine(latest(a)),
 		map(([reducer, a]) => reducer(a)),
+		remember,
 	);
 
 export const filterMap = <A, B>(f: (a: A) => Option<B>): Operator<A, B> => fa =>
@@ -84,7 +86,7 @@ export interface Handler<A> {
 export const createHandler = <A = never>(): Handler<A> => {
 	const source = makeSubject<A>();
 	const next = (a: A) => source(1, a);
-	(next as any)['source'] = source;
+	(next as any)['source'] = share(source);
 	return next as any;
 };
 
@@ -228,12 +230,12 @@ export const DATA: Data = 1;
 export const END: End = 2;
 
 export const fromHistory = (history: History): Source<Location<unknown>> => (start: Start | Data | End, sink: any) => {
-	if (start !== 0) {
+	if (start !== START) {
 		return;
 	}
 	let disposed = false;
 
-	sink(0, (t: End | Start | Data) => {
+	sink(START, (t: End | Start | Data) => {
 		if (t !== END) {
 			return;
 		}
@@ -245,12 +247,12 @@ export const fromHistory = (history: History): Source<Location<unknown>> => (sta
 		return;
 	}
 
-	const teardown = history.listen(location => sink(1, location));
+	const teardown = history.listen(location => sink(DATA, location));
 
-	sink(1, history.location);
+	sink(DATA, history.location);
 };
 
 export const debug = <A>(source: Source<A>, ...args: any[]): (() => void) => {
-	source(0, (t: number, data: unknown) => t === 1 && console.log(data, ...args));
-	return () => source(2);
+	source(START, (t: number, data: unknown) => t === DATA && console.log(data, ...args));
+	return () => source(END);
 };

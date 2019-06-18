@@ -14,7 +14,7 @@ export const Link = (props: Streamify<Props>) => {
 			selected: isActive,
 		});
 		return (
-			<a href={`#${path}`} className={className}>
+			<a href={`#${path}`} className={className} draggable={false}>
 				{label}
 			</a>
 		);

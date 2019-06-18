@@ -2436,6 +2436,13 @@ callbag-scan@^1.1.0:
   dependencies:
     callbag "^1.1.0"
 
+callbag-share@^1.2.0:
+  version "1.2.0"
+  resolved "https://registry.yarnpkg.com/callbag-share/-/callbag-share-1.2.0.tgz#5ed2333ebf4cc952d878348bf11f649894a6b989"
+  integrity sha512-Gt+D5lfJ/j3X5/3PiMPL8hHDPBmeQILZl2QYu+YJtSFz6PlNGQSL45aD4e4uoxMvhMZY9NpMHh7KRWia9PZA+g==
+  dependencies:
+    callbag "^1.1.0"
+
 callbag-start-with@^3.1.0:
   version "3.1.0"
   resolved "https://registry.yarnpkg.com/callbag-start-with/-/callbag-start-with-3.1.0.tgz#58c7f7cb3f3f44049e130166c2cf884c76e332ac"
