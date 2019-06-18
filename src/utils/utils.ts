@@ -83,19 +83,17 @@ export interface TargetKeyboardEvent<T = Element> extends KeyboardEvent<T> {
 	target: EventTarget & T;
 }
 
+type ChildOutput<A> = {
+	vdom: Stream<ReactElement>;
+	value?: Stream<A>;
+	destroy?: Stream<void>;
+};
+
 /**
  * Inspired by @cyclejs/state
  * @see https://github.com/cyclejs/cyclejs/blob/master/state/src/Collection.ts
  */
-export const collection = <
-	A,
-	O extends Streamify<{
-		vdom: ReactElement;
-		value: A;
-		destroy: void;
-	}>,
-	R
->(
+export const collection = <A, O extends ChildOutput<A>, R>(
 	source: Stream<A[]>,
 	Item: (props: Streamify<{ value: A }>) => O,
 	itemKey: (a: A, i: number) => string,
@@ -125,18 +123,24 @@ export const collection = <
 					const [setChildValue, value] = createValue<A>(nextValue);
 					const child = Item({ value });
 					const vdom = child.vdom.map(vdom => createElement(Fragment, { key }, vdom));
+					const reducers: Stream<Endomorphism<A[]>>[] = [];
+					if (child.destroy) {
+						reducers.push(child.destroy.map(() => (as: A[]) => as.filter((a, i) => itemKey(a, i) !== key)));
+					}
+					if (child.value) {
+						reducers.push(
+							child.value.map(value => (as: A[]) =>
+								as.map((a, i) => (itemKey(a, i) === key ? value : a)),
+							),
+						);
+					}
 					const result = {
 						child: {
 							...child,
 							vdom,
 						},
 						nextValue: setChildValue,
-						reducers: xs.merge(
-							child.destroy.map(() => (as: A[]) => as.filter((a, i) => itemKey(a, i) !== key)),
-							child.value.map(value => (as: A[]) =>
-								as.map((a, i) => (itemKey(a, i) === key ? value : a)),
-							),
-						),
+						reducers: xs.merge(...reducers),
 					};
 					storage.set(key, result);
 					acc.result[i] = result.child;
