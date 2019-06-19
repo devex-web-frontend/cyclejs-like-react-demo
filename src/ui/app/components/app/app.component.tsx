@@ -6,7 +6,6 @@ import map from 'callbag-map';
 import pipe from 'callbag-pipe';
 import { constVoid } from 'fp-ts/lib/function';
 import { END, START } from '../../../../utils/utils';
-import tap from 'callbag-tap';
 
 export const App = combineReader(
 	TaskListContainer,

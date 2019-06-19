@@ -10,7 +10,6 @@ import map from 'callbag-map';
 import filter from 'callbag-filter';
 import sampleCombine from 'callbag-sample-combine';
 import latest from 'callbag-latest';
-import tap from 'callbag-tap';
 import share from 'callbag-share';
 
 const ESC_KEY = 27;

@@ -6,7 +6,7 @@ import pipe from 'callbag-pipe';
 import filter from 'callbag-filter';
 import map from 'callbag-map';
 import of from 'callbag-of';
-import { createTaskValue, TaskValue } from '../../model/task.model';
+import { createTaskValue } from '../../model/task.model';
 
 type Props = {
 	tasks: Tasks;
