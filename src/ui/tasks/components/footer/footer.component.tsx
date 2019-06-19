@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { createHandler, K, reduce, streamify, Streamify } from '../../../../utils/utils';
+import { createHandler, debug, K, reduce, streamify, Streamify } from '../../../../utils/utils';
 import { MouseEvent } from 'react';
 import { Location } from 'history';
 import { combineReader } from '@devexperts/utils/dist/adt/reader.utils';
@@ -35,6 +35,7 @@ const Filters = combineReader(LinkContainer, LinkContainer => () => {
 			path: '/completed',
 		}),
 	);
+
 	const vdom = K(all.vdom, active.vdom, completed.vdom, (all, active, completed) => (
 		<ul className="filters">
 			<li>{all}</li>

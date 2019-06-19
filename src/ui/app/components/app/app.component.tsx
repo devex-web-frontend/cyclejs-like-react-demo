@@ -4,8 +4,7 @@ import { TaskListContainer } from '../../../tasks/containers/task-list.container
 import merge from 'callbag-merge';
 import map from 'callbag-map';
 import pipe from 'callbag-pipe';
-import { constVoid } from 'fp-ts/lib/function';
-import { END, START } from '../../../../utils/utils';
+import { run } from '../../../../utils/utils';
 
 export const App = combineReader(
 	TaskListContainer,
@@ -13,17 +12,23 @@ export const App = combineReader(
 		memo(() => {
 			const [state, setState] = useState<ReactElement>();
 			const taskListContainer = useMemo(() => TaskListContainer({}), [TaskListContainer]);
-			useEffect(() => {
-				const sink = merge(
-					pipe(
-						taskListContainer.vdom,
-						map(setState),
+			useEffect(
+				() =>
+					run(
+						merge(
+							pipe(
+								taskListContainer.vdom,
+								map(dom => {
+									console.log('setting state', dom);
+									return setState(dom);
+								}),
+							),
+							taskListContainer.effect,
+						),
 					),
-					taskListContainer.effect,
-				);
-				sink(START, constVoid);
-				return () => sink(END);
-			}, [taskListContainer.vdom, taskListContainer.effect]);
+				[taskListContainer.vdom, taskListContainer.effect],
+			);
+			console.log('rendering', state);
 			return state || null;
 		}),
 );

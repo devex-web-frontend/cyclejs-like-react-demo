@@ -149,12 +149,22 @@ declare module 'callbag-subject' {
 	export default function makeSubject<A>(): Callbag<A, A>;
 }
 
+declare module 'callbag-behavior-subject' {
+	import { Callbag } from 'callbag';
+	export default function makeBehaviorSubject<A>(initial: A): Callbag<A, A>;
+}
+
 declare module 'callbag-start-with' {
 	import { Source } from 'callbag';
 	export default function startWith<A>(...as: A[]): (source: Source<A>) => Source<A>;
 }
 
-declare module 'callbag-remember' {
+declare module 'callbag-interval' {
 	import { Source } from 'callbag';
-	export default function remember<A>(source: Source<A>): Source<A>;
+	export default function interval(n: number): Source<number>;
+}
+
+declare module 'callbag-from-iter' {
+	import { Source } from 'callbag';
+	export default function fromIter<A>(iterator: Iterable<A>): Source<A>;
 }

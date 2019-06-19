@@ -1,4 +1,4 @@
-import { K, Streamify } from '../../../../utils/utils';
+import { debug, K, Streamify } from '../../../../utils/utils';
 
 import 'todomvc-common/base.css';
 import 'todomvc-app-css/index.css';
@@ -35,6 +35,7 @@ export const TaskList = combineReader(Footer, Footer => (props: Streamify<Props>
 			}
 		}
 	});
+
 	const header = Header({ tasks });
 
 	const main = Main({ tasks, filtered });
@@ -42,6 +43,10 @@ export const TaskList = combineReader(Footer, Footer => (props: Streamify<Props>
 	const activeCount = K(active, active => active.length);
 	const completedCount = K(completed, completed => completed.length);
 	const footer = Footer({ tasks, location, activeCount, completedCount });
+
+	debug(header.vdom, 'header.vdom');
+	debug(main.vdom, 'main.vdom');
+	debug(footer.vdom, 'footer.vdom');
 
 	const vdom = K(header.vdom, main.vdom, footer.vdom, (header, main, footer) => (
 		<div className={'todoapp'}>

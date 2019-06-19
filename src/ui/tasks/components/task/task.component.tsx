@@ -10,7 +10,6 @@ import map from 'callbag-map';
 import filter from 'callbag-filter';
 import sampleCombine from 'callbag-sample-combine';
 import latest from 'callbag-latest';
-import share from 'callbag-share';
 
 const ESC_KEY = 27;
 const ENTER_KEY = 13;
@@ -64,7 +63,6 @@ export const Task = (props: Streamify<Props>) => {
 	const enterKeyUp = pipe(
 		handleEditKeyUp.source,
 		filter(e => e.keyCode === ENTER_KEY),
-		share,
 	);
 
 	const value = reduce(

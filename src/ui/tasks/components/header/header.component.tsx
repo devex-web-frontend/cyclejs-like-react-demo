@@ -1,11 +1,10 @@
-import { filterMap, Streamify, reduce, TargetKeyboardEvent, createHandler } from '../../../../utils/utils';
+import { filterMap, Streamify, reduce, TargetKeyboardEvent, createHandler, of } from '../../../../utils/utils';
 import * as React from 'react';
 import { none, some } from 'fp-ts/lib/Option';
 import { prepend, Tasks } from '../../model/tasks.model';
 import pipe from 'callbag-pipe';
 import filter from 'callbag-filter';
 import map from 'callbag-map';
-import of from 'callbag-of';
 import { createTaskValue } from '../../model/task.model';
 
 type Props = {
