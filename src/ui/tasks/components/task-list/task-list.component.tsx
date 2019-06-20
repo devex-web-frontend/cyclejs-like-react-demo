@@ -1,4 +1,4 @@
-import { K, Streamify } from '../../../../utils/utils';
+import { debug, inspect, K, Streamify } from '../../../../utils/utils';
 
 import 'todomvc-common/base.css';
 import 'todomvc-app-css/index.css';
@@ -21,9 +21,10 @@ export const TaskList = combineReader(Footer, Footer => (props: Streamify<Props>
 
 	const active = K(tasks, getActive);
 	const completed = K(tasks, getCompleted);
+	const pathname = K(location, location => location.pathname);
 
-	const filtered = K(tasks, active, completed, location, (tasks, active, completed, location) => {
-		switch (location.pathname) {
+	const filtered = K(tasks, active, completed, pathname, (tasks, active, completed, pathname) => {
+		switch (pathname) {
 			case '/active': {
 				return active;
 			}

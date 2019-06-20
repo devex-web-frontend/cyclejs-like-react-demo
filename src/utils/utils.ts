@@ -1,4 +1,4 @@
-import { constVoid, Endomorphism } from 'fp-ts/lib/function';
+import { constVoid, Endomorphism, Predicate, Refinement } from 'fp-ts/lib/function';
 import { createElement, Fragment, KeyboardEvent, ReactElement } from 'react';
 
 import {
@@ -6,7 +6,7 @@ import {
 	ProjectMany,
 } from '@devexperts/utils/dist/typeclasses/product-left-coproduct-left/product-left-coproduct-left.utils';
 import { isSome, Option } from 'fp-ts/lib/Option';
-import xs, { Stream, MemoryStream } from 'xstream';
+import xs, { Stream, MemoryStream, Operator as XStreamOperator, InternalProducer, Aggregator } from 'xstream';
 import dropRepeats from 'xstream/extra/dropRepeats';
 import sampleCombine from 'xstream/extra/sampleCombine';
 import { map } from 'fp-ts/lib/Record';
@@ -201,3 +201,57 @@ export const run = <A>(source: Stream<A>): (() => void) => {
 	const subscription = source.subscribe({});
 	return () => subscription.unsubscribe();
 };
+
+interface MapOperator<A, B> extends XStreamOperator<A, B> {
+	readonly f: (a: A) => B;
+}
+
+const isAggregator = (obj: Record<string, unknown>): obj is Aggregator<unknown, unknown> => {
+	const { type, insArr } = obj;
+	return typeof type === 'string' && Array.isArray(insArr) && insArr.every(ins => ins instanceof Stream);
+};
+
+const isOperator = (producer: InternalProducer<unknown>): producer is XStreamOperator<unknown, unknown> => {
+	const { type, ins } = producer as any;
+	return typeof type === 'string' && ins instanceof Stream;
+};
+
+const isMapOpperator = <A, B>(operator: XStreamOperator<A, B>): operator is MapOperator<A, B> =>
+	operator.type === 'map' && typeof (operator as any)['f'] === 'function';
+
+// const isOperator?
+export function inspect<A>(source: Stream<A>): object | null {
+	const producer = source._prod;
+	if (isAggregator(producer)) {
+		return [producer.type, producer.insArr.map(inspect)];
+	}
+	if (isOperator(producer)) {
+		if (isMapOpperator(producer)) {
+			return [producer.type, producer.f, inspect(producer.ins)];
+		}
+		return [producer.type, inspect(producer.ins)];
+	}
+	return null;
+}
+
+export const debug = <A>(source: Stream<A>, ...args: any[]) => run(source.compose(tap(a => console.log(...args, a))));
+
+export function filter<A, B extends A>(p: Refinement<A, B>): (as: A[]) => B[];
+export function filter<A>(p: Predicate<A>): Endomorphism<A[]>;
+export function filter<A>(p: Predicate<A>): Endomorphism<A[]> {
+	return as => {
+		let changed = false;
+		const n = as.length;
+		const result = [];
+		let j = 0;
+		for (let i = 0; i < n; i++) {
+			const a = as[i];
+			if (p(a)) {
+				result[j++] = a;
+			} else {
+				changed = true;
+			}
+		}
+		return changed ? result : as;
+	};
+}
