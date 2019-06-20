@@ -1,4 +1,4 @@
-import { createValue, K, Streamify } from '../../../../utils/utils';
+import { K, Streamify } from '../../../../utils/utils';
 
 import 'todomvc-common/base.css';
 import 'todomvc-app-css/index.css';

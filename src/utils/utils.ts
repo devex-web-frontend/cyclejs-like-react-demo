@@ -196,3 +196,8 @@ export type First<A extends [any, ...any[]]> = A extends [infer F, ...any[]] ? F
 export type ReaderValueType<R extends Reader<any, any>> = R extends Reader<any, infer A> ? A : never;
 
 export const JSONFromString: Type<JSONType, string, string> = IOTSJSONFromString as any;
+
+export const run = <A>(source: Stream<A>): (() => void) => {
+	const subscription = source.subscribe({});
+	return () => subscription.unsubscribe();
+};
