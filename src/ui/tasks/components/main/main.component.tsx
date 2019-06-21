@@ -3,9 +3,10 @@ import * as React from 'react';
 import { randomId } from '@devexperts/utils/dist/string';
 import { Task } from '../task/task.component';
 import { ChangeEvent } from 'react';
-import xs from 'xstream';
 import { areAllCompleted, Tasks, toggleAllCompleted } from '../../model/tasks.model';
 import { TaskValue } from '../../model/task.model';
+import { map, merge } from '@most/core';
+import { pipe } from '../../../../utils/pipe.utils';
 
 type Props = {
 	tasks: Tasks;
@@ -40,9 +41,15 @@ export const Main = (props: Streamify<Props>) => {
 
 	const tasksValue = reduce(props.tasks, tasks.reducers);
 
-	const value = xs.merge(
+	const value = merge(
 		tasksValue,
-		reduce(props.tasks, K(handleToggleAllChange, e => e.target.checked).map(toggleAllCompleted)),
+		reduce(
+			props.tasks,
+			pipe(
+				K(handleToggleAllChange, e => e.target.checked),
+				map(toggleAllCompleted),
+			),
+		),
 	);
 
 	return {

@@ -5,6 +5,8 @@ import { Location } from 'history';
 import { combineReader } from '@devexperts/utils/dist/adt/reader.utils';
 import { LinkContainer } from '../../../ui-kit/containers/link.container';
 import { getActive, Tasks } from '../../model/tasks.model';
+import { pipe } from '../../../../utils/pipe.utils';
+import { map } from '@most/core';
 
 type Props = {
 	tasks: Tasks;
@@ -68,7 +70,13 @@ export const Footer = combineReader(Filters, Filters => (props: Streamify<Props>
 		),
 	);
 
-	const value = reduce(props.tasks, handleClearCompletedClick.mapTo(getActive));
+	const value = reduce(
+		props.tasks,
+		pipe(
+			handleClearCompletedClick,
+			map(() => getActive),
+		),
+	);
 
 	return {
 		vdom,

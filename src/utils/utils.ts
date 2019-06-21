@@ -1,4 +1,4 @@
-import { constVoid, Endomorphism, Predicate, Refinement } from 'fp-ts/lib/function';
+import { constVoid, Endomorphism } from 'fp-ts/lib/function';
 import { createElement, Fragment, KeyboardEvent, ReactElement } from 'react';
 
 import {
@@ -6,36 +6,53 @@ import {
 	ProjectMany,
 } from '@devexperts/utils/dist/typeclasses/product-left-coproduct-left/product-left-coproduct-left.utils';
 import { isSome, Option } from 'fp-ts/lib/Option';
-import xs, { Stream, MemoryStream, Operator as XStreamOperator, InternalProducer, Aggregator } from 'xstream';
-import dropRepeats from 'xstream/extra/dropRepeats';
-import sampleCombine from 'xstream/extra/sampleCombine';
-import { map } from 'fp-ts/lib/Record';
+import { map as recordMap } from 'fp-ts/lib/Record';
 import { Reader } from 'fp-ts/lib/Reader';
 import { JSONFromString as IOTSJSONFromString, JSONType } from 'io-ts-types/lib/JSON/JSONFromString';
 import { Type } from 'io-ts';
+import { Sink, Stream } from '@most/types';
+import {
+	map,
+	mergeArray,
+	now,
+	snapshot,
+	filter,
+	combineArray,
+	skipRepeats,
+	startWith,
+	scan,
+	multicast,
+	switchLatest,
+	tap,
+	runEffects,
+	takeWhile,
+	until,
+} from '@most/core';
+import { pipe } from './pipe.utils';
+import { hold } from '@most/hold';
+import { createAdapter } from '@most/adapter/dist';
+import { newDefaultScheduler } from '@most/scheduler';
 
 export type Operator<A, B> = (source: Stream<A>) => Stream<B>;
 
 export type Streamify<O extends object> = { [K in keyof O]: Stream<O[K]> };
-export const streamify = <O extends object>(obj: O): Streamify<O> => map(obj, xs.of) as any;
+export const streamify = <O extends object>(obj: O): Streamify<O> => recordMap(obj, now) as any;
 
 export const reduce = <A>(a: Stream<A>, ...reducers: Stream<Endomorphism<A>>[]): Stream<A> =>
-	xs
-		.merge(...reducers)
-		.compose(sampleCombine(a))
-		.map(([reducer, a]) => reducer(a));
+	pipe(
+		mergeArray(reducers),
+		snapshot((a, reducer) => reducer(a), a),
+		multicast,
+	);
 
 export const filterMap = <A, B>(f: (a: A) => Option<B>): Operator<A, B> => fa =>
-	fa
-		.map(f)
-		.filter(isSome)
-		.map(o => o.value);
-
-export const tap = <A>(f: (a: A) => void): Operator<A, A> => fa =>
-	fa.map(a => {
-		f(a);
-		return a;
-	});
+	pipe(
+		fa,
+		map(f),
+		filter(isSome), // lacks signature for refinement
+		map(o => (o as any).value),
+		multicast,
+	);
 
 declare module 'fp-ts/lib/HKT' {
 	interface URI2HKT2<L, A> {
@@ -43,14 +60,14 @@ declare module 'fp-ts/lib/HKT' {
 	}
 }
 
-export const K: ProductMap<'Stream'> = <A, R>(...args: Array<Stream<A> | ProjectMany<A, R>>): MemoryStream<R> => {
+export const K: ProductMap<'Stream'> = <A, R>(...args: Array<Stream<A> | ProjectMany<A, R>>): Stream<R> => {
 	const streams = args.slice(0, -1) as Stream<A>[];
 	const project = args[args.length - 1] as ProjectMany<A, R>;
-	return xs
-		.combine(...streams)
-		.map(args => project(...args))
-		.compose(dropRepeats())
-		.remember();
+	return pipe(
+		combineArray(project, streams),
+		skipRepeats,
+		hold,
+	);
 };
 
 export interface Handler<A> extends Stream<A> {
@@ -59,8 +76,7 @@ export interface Handler<A> extends Stream<A> {
 
 const functionKeys: PropertyKey[] = Object.getOwnPropertyNames(Object.getPrototypeOf(constVoid));
 export const createHandler = <A = never>(): Handler<A> => {
-	const source = xs.create<A>();
-	const next = (a: A) => source.shamefullySendNext(a);
+	const [next, source] = createAdapter<A>();
 	return new Proxy(next, {
 		get(target, key) {
 			return ((functionKeys.includes(key) ? next : source) as any)[key];
@@ -72,10 +88,12 @@ export const createValue = <A>(initial: A): [(a: A) => void, Stream<A>] => {
 	const handler = createHandler<A>();
 	return [
 		handler,
-		handler
-			.startWith(initial)
-			.compose(dropRepeats())
-			.remember(),
+		pipe(
+			handler,
+			startWith(initial),
+			skipRepeats,
+			hold,
+		),
 	];
 };
 
@@ -116,75 +134,98 @@ export const collection = <A, O extends ChildOutput<A>, R>(
 		storage: Map<string, Stored>;
 		result: O[];
 	};
-	const state = source.fold<State>(
-		(acc, nextState) => {
-			const { storage } = acc;
-			acc.result = Array<O>(nextState.length);
-			const nextKeys = new Set<string>();
+	const state = pipe(
+		source,
+		scan<A[], State>(
+			(acc, nextState) => {
+				const { storage } = acc;
+				acc.result = Array<O>(nextState.length);
+				const nextKeys = new Set<string>();
 
-			// add
-			for (let i = 0, n = nextState.length; i < n; i++) {
-				const nextValue = nextState[i];
-				const key = itemKey(nextValue, i);
-				nextKeys.add(key);
-				const existing = storage.get(key);
-				if (typeof existing === 'undefined') {
-					const [setChildValue, value] = createValue<A>(nextValue);
-					const child = Item({ value });
-					const vdom = child.vdom.map(vdom => createElement(Fragment, { key }, vdom));
-					const reducers: Stream<Endomorphism<A[]>>[] = [];
-					if (child.destroy) {
-						reducers.push(child.destroy.map(() => (as: A[]) => as.filter((a, i) => itemKey(a, i) !== key)));
-					}
-					if (child.value) {
-						reducers.push(
-							child.value.map(value => (as: A[]) =>
-								as.map((a, i) => (itemKey(a, i) === key ? value : a)),
-							),
+				// add
+				for (let i = 0, n = nextState.length; i < n; i++) {
+					const nextValue = nextState[i];
+					const key = itemKey(nextValue, i);
+					nextKeys.add(key);
+					const existing = storage.get(key);
+					if (typeof existing === 'undefined') {
+						const [setChildValue, value] = createValue<A>(nextValue);
+						const child = Item({ value });
+						const vdom = pipe(
+							child.vdom,
+							map(vdom => createElement(Fragment, { key }, vdom)),
+							multicast,
 						);
+						const reducers: Stream<Endomorphism<A[]>>[] = [];
+						if (child.destroy) {
+							reducers.push(
+								pipe(
+									child.destroy,
+									map(() => (as: A[]) => as.filter((a, i) => itemKey(a, i) !== key)),
+									multicast,
+								),
+							);
+						}
+						if (child.value) {
+							reducers.push(
+								pipe(
+									child.value,
+									map(value => (as: A[]) => as.map((a, i) => (itemKey(a, i) === key ? value : a))),
+									multicast,
+								),
+							);
+						}
+						const result = {
+							child: {
+								...child,
+								vdom,
+							},
+							nextValue: setChildValue,
+							reducers: mergeArray(reducers),
+						};
+						storage.set(key, result);
+						acc.result[i] = result.child;
+					} else {
+						existing.nextValue(nextValue);
+						acc.result[i] = existing.child;
 					}
-					const result = {
-						child: {
-							...child,
-							vdom,
-						},
-						nextValue: setChildValue,
-						reducers: xs.merge(...reducers),
-					};
-					storage.set(key, result);
-					acc.result[i] = result.child;
-				} else {
-					existing.nextValue(nextValue);
-					acc.result[i] = existing.child;
 				}
-			}
 
-			// remove
-			storage.forEach((_, key) => {
-				if (!nextKeys.has(key)) {
-					storage.delete(key);
-				}
-			});
+				// remove
+				storage.forEach((_, key) => {
+					if (!nextKeys.has(key)) {
+						storage.delete(key);
+					}
+				});
 
-			nextKeys.clear();
+				nextKeys.clear();
 
-			return acc;
-		},
-		{ storage: new Map(), result: [] },
+				return acc;
+			},
+			{ storage: new Map(), result: [] },
+		),
 	);
 
-	const vdom = state
-		.map(state =>
-			state.result.length === 0 ? xs.of<ReactElement[]>([]) : xs.combine(...state.result.map(o => o.vdom)),
-		)
-		.flatten();
+	const vdom = pipe(
+		state,
+		map(state =>
+			state.result.length === 0
+				? now<ReactElement[]>([])
+				: combineArray((...args) => args, state.result.map(o => o.vdom)),
+		),
+		switchLatest,
+		multicast,
+	);
 
-	const reducers = state
-		.map(state => {
+	const reducers = pipe(
+		state,
+		map(state => {
 			const entries = Array.from(state.storage);
-			return xs.merge(...entries.map(([id, entry]) => entry.reducers));
-		})
-		.flatten();
+			return mergeArray(entries.map(([id, entry]) => entry.reducers));
+		}),
+		switchLatest,
+		multicast,
+	);
 
 	return {
 		vdom,
@@ -197,61 +238,31 @@ export type ReaderValueType<R extends Reader<any, any>> = R extends Reader<any, 
 
 export const JSONFromString: Type<JSONType, string, string> = IOTSJSONFromString as any;
 
+const scheduler = newDefaultScheduler();
+const voidSink: Sink<unknown> = {
+	event: constVoid,
+	error: e => {
+		throw e;
+	},
+	end: constVoid,
+};
 export const run = <A>(source: Stream<A>): (() => void) => {
-	const subscription = source.subscribe({});
-	return () => subscription.unsubscribe();
+	const [dispose, disposed] = createAdapter<void>();
+	runEffects(
+		pipe(
+			source,
+			until(disposed),
+		),
+		scheduler,
+	);
+	return () => dispose();
 };
 
-interface MapOperator<A, B> extends XStreamOperator<A, B> {
-	readonly f: (a: A) => B;
-}
-
-const isAggregator = (obj: Record<string, unknown>): obj is Aggregator<unknown, unknown> => {
-	const { type, insArr } = obj;
-	return typeof type === 'string' && Array.isArray(insArr) && insArr.every(ins => ins instanceof Stream);
-};
-
-const isOperator = (producer: InternalProducer<unknown>): producer is XStreamOperator<unknown, unknown> => {
-	const { type, ins } = producer as any;
-	return typeof type === 'string' && ins instanceof Stream;
-};
-
-const isMapOpperator = <A, B>(operator: XStreamOperator<A, B>): operator is MapOperator<A, B> =>
-	operator.type === 'map' && typeof (operator as any)['f'] === 'function';
-
-// const isOperator?
-export function inspect<A>(source: Stream<A>): object | null {
-	const producer = source._prod;
-	if (isAggregator(producer)) {
-		return [producer.type, producer.insArr.map(inspect)];
-	}
-	if (isOperator(producer)) {
-		if (isMapOpperator(producer)) {
-			return [producer.type, producer.f, inspect(producer.ins)];
-		}
-		return [producer.type, inspect(producer.ins)];
-	}
-	return null;
-}
-
-export const debug = <A>(source: Stream<A>, ...args: any[]) => run(source.compose(tap(a => console.log(...args, a))));
-
-export function filter<A, B extends A>(p: Refinement<A, B>): (as: A[]) => B[];
-export function filter<A>(p: Predicate<A>): Endomorphism<A[]>;
-export function filter<A>(p: Predicate<A>): Endomorphism<A[]> {
-	return as => {
-		let changed = false;
-		const n = as.length;
-		const result = [];
-		let j = 0;
-		for (let i = 0; i < n; i++) {
-			const a = as[i];
-			if (p(a)) {
-				result[j++] = a;
-			} else {
-				changed = true;
-			}
-		}
-		return changed ? result : as;
-	};
-}
+export const debug = <A>(source: Stream<A>, ...args: any[]) =>
+	run(
+		pipe(
+			source,
+			tap(a => console.log(...args, a)),
+			multicast
+		),
+	);

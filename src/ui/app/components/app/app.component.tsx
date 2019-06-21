@@ -1,8 +1,9 @@
 import { memo, ReactElement, useEffect, useMemo, useState, ComponentType } from 'react';
-import xs from 'xstream';
 import { combineReader } from '@devexperts/utils/dist/adt/reader.utils';
 import { TaskListContainer } from '../../../tasks/containers/task-list.container';
 import { run } from '../../../../utils/utils';
+import { merge, tap } from '@most/core';
+import { pipe } from '../../../../utils/pipe.utils';
 
 export const App = combineReader(
 	TaskListContainer,
@@ -10,7 +11,19 @@ export const App = combineReader(
 		memo(() => {
 			const [state, setState] = useState<ReactElement>();
 			const taskListContainer = useMemo(() => TaskListContainer({}), [TaskListContainer]);
-			useEffect(() => run(xs.merge(taskListContainer.vdom.map(setState), taskListContainer.effect)), []);
+			useEffect(
+				() =>
+					run(
+						merge(
+							pipe(
+								taskListContainer.vdom,
+								tap(setState),
+							),
+							taskListContainer.effect,
+						),
+					),
+				[],
+			);
 			return state || null;
 		}),
 );

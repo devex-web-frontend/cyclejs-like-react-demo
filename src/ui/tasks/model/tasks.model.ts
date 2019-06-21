@@ -1,6 +1,6 @@
 import { setCompleted, TaskValue } from './task.model';
 import { Endomorphism } from 'fp-ts/lib/function';
-import { filter } from '../../../utils/utils';
+import { filter } from '../../../utils/array.utils';
 
 export type Tasks = TaskValue[];
 export const areAllCompleted = (tasks: Tasks): boolean => tasks.length > 0 && tasks.every(task => task.completed);

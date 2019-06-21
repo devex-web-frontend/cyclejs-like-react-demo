@@ -5,6 +5,11 @@
   "dependencies": {
     "@devexperts/lint": "^0.29.0",
     "@devexperts/utils": "^0.29.0",
+    "@most/adapter": "^1.0.0",
+    "@most/core": "^1.4.2",
+    "@most/hold": "^4.0.1",
+    "@most/scheduler": "^1.2.2",
+    "@most/types": "^1.0.1",
     "@types/classnames": "^2.2.8",
     "@types/history": "^4.7.2",
     "@types/jest": "24.0.13",
@@ -24,8 +29,7 @@
     "todomvc-common": "^1.0.5",
     "tslint": "^5.16.0",
     "typelevel-ts": "^0.3.5",
-    "typescript": "3.4.5",
-    "xstream": "^11.11.0"
+    "typescript": "3.4.5"
   },
   "scripts": {
     "start": "react-scripts start",
