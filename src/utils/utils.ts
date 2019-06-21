@@ -263,6 +263,6 @@ export const debug = <A>(source: Stream<A>, ...args: any[]) =>
 		pipe(
 			source,
 			tap(a => console.log(...args, a)),
-			multicast
+			multicast,
 		),
 	);
