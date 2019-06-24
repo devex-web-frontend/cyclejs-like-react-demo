@@ -7,7 +7,6 @@
     "@devexperts/utils": "^0.29.0",
     "@most/adapter": "^1.0.0",
     "@most/core": "^1.4.2",
-    "@most/hold": "^4.0.1",
     "@most/scheduler": "^1.2.2",
     "@most/types": "^1.0.1",
     "@types/classnames": "^2.2.8",

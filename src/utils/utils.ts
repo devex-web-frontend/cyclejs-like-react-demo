@@ -29,9 +29,9 @@ import {
 	until,
 } from '@most/core';
 import { pipe } from './pipe.utils';
-import { hold } from '@most/hold';
 import { createAdapter } from '@most/adapter/dist';
 import { newDefaultScheduler } from '@most/scheduler';
+import { hold } from './hold.utils';
 
 export type Operator<A, B> = (source: Stream<A>) => Stream<B>;
 

@@ -6,8 +6,8 @@ import { fromEither } from 'fp-ts/lib/Option';
 import { Stream } from '@most/types';
 import { pipe } from '../utils/pipe.utils';
 import { filter, multicast, startWith } from '@most/core';
-import { hold } from '@most/hold';
 import { StorageEventSource } from '../utils/storage.utils';
+import { hold } from '../utils/hold.utils';
 
 type TasksServiceContext = {
 	storage: Storage;

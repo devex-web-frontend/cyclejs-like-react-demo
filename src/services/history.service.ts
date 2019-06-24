@@ -3,8 +3,8 @@ import { History, Location } from 'history';
 import { combineReader } from '@devexperts/utils/dist/adt/reader.utils';
 import { ask } from 'fp-ts/lib/Reader';
 import { HistoryEventSource } from '../utils/history.utils';
-import { hold } from '@most/hold';
 import { pipe } from '../utils/pipe.utils';
+import { hold } from '../utils/hold.utils';
 
 export type HistoryService = {
 	location: Stream<Location>;
