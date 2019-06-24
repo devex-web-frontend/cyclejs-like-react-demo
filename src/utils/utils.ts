@@ -10,7 +10,7 @@ import { map as recordMap } from 'fp-ts/lib/Record';
 import { Reader } from 'fp-ts/lib/Reader';
 import { JSONFromString as IOTSJSONFromString, JSONType } from 'io-ts-types/lib/JSON/JSONFromString';
 import { Type } from 'io-ts';
-import { Sink, Stream } from '@most/types';
+import { Stream } from '@most/types';
 import {
 	map,
 	mergeArray,
@@ -25,7 +25,6 @@ import {
 	switchLatest,
 	tap,
 	runEffects,
-	takeWhile,
 	until,
 } from '@most/core';
 import { pipe } from './pipe.utils';
@@ -239,13 +238,6 @@ export type ReaderValueType<R extends Reader<any, any>> = R extends Reader<any, 
 export const JSONFromString: Type<JSONType, string, string> = IOTSJSONFromString as any;
 
 const scheduler = newDefaultScheduler();
-const voidSink: Sink<unknown> = {
-	event: constVoid,
-	error: e => {
-		throw e;
-	},
-	end: constVoid,
-};
 export const run = <A>(source: Stream<A>): (() => void) => {
 	const [dispose, disposed] = createAdapter<void>();
 	runEffects(

@@ -10,7 +10,7 @@ export const App = combineReader(
 	(TaskListContainer): ComponentType =>
 		memo(() => {
 			const [state, setState] = useState<ReactElement>();
-			const taskListContainer = useMemo(() => TaskListContainer({}), [TaskListContainer]);
+			const taskListContainer = useMemo(() => TaskListContainer({}), []);
 			useEffect(
 				() =>
 					run(
@@ -22,7 +22,7 @@ export const App = combineReader(
 							taskListContainer.effect,
 						),
 					),
-				[],
+				[taskListContainer.effect, taskListContainer.vdom],
 			);
 			return state || null;
 		}),

@@ -1,4 +1,4 @@
-import { createHashHistory, History, Location, UnregisterCallback } from 'history';
+import { History, Location } from 'history';
 import { Disposable, Scheduler, Sink, Stream } from '@most/types';
 
 export class HistoryEventSource<A> implements Stream<Location<A>> {
