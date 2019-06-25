@@ -203,6 +203,7 @@ export const collection = <A, O extends ChildOutput<A>, R>(
 			},
 			{ storage: new Map(), result: [] },
 		),
+		multicast,
 	);
 
 	const vdom = pipe(
