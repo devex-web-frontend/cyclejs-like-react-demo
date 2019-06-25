@@ -41,6 +41,7 @@ export const reduce = <A>(a: Stream<A>, ...reducers: Stream<Endomorphism<A>>[]):
 	pipe(
 		mergeArray(reducers),
 		snapshot((a, reducer) => reducer(a), a),
+		skipRepeats,
 		multicast,
 	);
 
@@ -76,9 +77,10 @@ export interface Handler<A> extends Stream<A> {
 const functionKeys: PropertyKey[] = Object.getOwnPropertyNames(Object.getPrototypeOf(constVoid));
 export const createHandler = <A = never>(): Handler<A> => {
 	const [next, source] = createAdapter<A>();
+	const shared = multicast(source);
 	return new Proxy(next, {
 		get(target, key) {
-			return ((functionKeys.includes(key) ? next : source) as any)[key];
+			return ((functionKeys.includes(key) ? next : shared) as any)[key];
 		},
 	}) as any;
 };

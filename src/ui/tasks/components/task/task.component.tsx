@@ -2,7 +2,7 @@ import { K, Streamify, reduce, TargetKeyboardEvent, createHandler } from '../../
 import * as React from 'react';
 import cx from 'classnames';
 import { ChangeEvent, createRef, FocusEvent, MouseEvent } from 'react';
-import { constant, constVoid } from 'fp-ts/lib/function';
+import { compose, constant, constVoid } from 'fp-ts/lib/function';
 import { setCompleted, setEditing, setTitle, TaskValue } from '../../model/task.model';
 import { filter, map, merge, snapshot } from '@most/core';
 import { pipe } from '../../../../utils/pipe.utils';
@@ -79,11 +79,14 @@ export const Task = (props: Streamify<Props>) => {
 		),
 		pipe(
 			merge(enterKeyUp, handleEditBlur),
-			map(constant(setEditing(false))),
-		),
-		pipe(
-			merge(enterKeyUp, handleEditBlur),
-			snapshot((title, _) => setTitle(title), title),
+			snapshot(
+				(title, _) =>
+					compose(
+						setEditing(false),
+						setTitle(title),
+					),
+				title,
+			),
 		),
 	);
 
