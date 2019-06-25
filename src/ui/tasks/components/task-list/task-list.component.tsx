@@ -1,4 +1,4 @@
-import { debug, K, Streamify } from '../../../../utils/utils';
+import { K, Streamify } from '../../../../utils/utils';
 
 import 'todomvc-common/base.css';
 import 'todomvc-app-css/index.css';
@@ -53,8 +53,6 @@ export const TaskList = combineReader(Footer, Footer => (props: Streamify<Props>
 	));
 
 	const value = mergeArray([main.value, header.value, footer.value]);
-
-	debug(value, 'value')
 
 	return {
 		vdom,
