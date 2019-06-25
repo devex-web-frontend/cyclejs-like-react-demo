@@ -1,10 +1,10 @@
-import { Stream } from 'xstream';
 import { ask } from 'fp-ts/lib/Reader';
 import { Link } from '../components/link/link.component';
 import { First, K } from '../../../utils/utils';
 import { combineReader } from '@devexperts/utils/dist/adt/reader.utils';
 import { Omit } from 'typelevel-ts';
 import { Location } from 'history';
+import { Stream } from '@most/types';
 
 type LinkContainerContext = {
 	location: Stream<Location>;

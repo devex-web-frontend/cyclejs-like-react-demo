@@ -5,6 +5,10 @@
   "dependencies": {
     "@devexperts/lint": "^0.29.0",
     "@devexperts/utils": "^0.29.0",
+    "@most/adapter": "^1.0.0",
+    "@most/core": "^1.4.2",
+    "@most/scheduler": "^1.2.2",
+    "@most/types": "^1.0.1",
     "@types/classnames": "^2.2.8",
     "@types/history": "^4.7.2",
     "@types/jest": "24.0.13",
@@ -12,9 +16,9 @@
     "@types/react": "16.8.18",
     "@types/react-dom": "16.8.4",
     "classnames": "^2.2.6",
-    "fp-ts": "^1.18.2",
+    "fp-ts": "^1.19.2",
     "history": "^4.9.0",
-    "io-ts": "^1.8.6",
+    "io-ts": "^1.10.2",
     "io-ts-types": "^0.4.7",
     "prettier": "^1.17.1",
     "react": "^16.8.6",
@@ -24,8 +28,7 @@
     "todomvc-common": "^1.0.5",
     "tslint": "^5.16.0",
     "typelevel-ts": "^0.3.5",
-    "typescript": "3.4.5",
-    "xstream": "^11.11.0"
+    "typescript": "3.4.5"
   },
   "scripts": {
     "start": "react-scripts start",

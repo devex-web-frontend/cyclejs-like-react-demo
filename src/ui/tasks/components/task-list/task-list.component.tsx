@@ -6,10 +6,10 @@ import * as React from 'react';
 import { Header } from '../header/header.component';
 import { Main } from '../main/main.component';
 import { Footer } from '../footer/footer.component';
-import xs from 'xstream';
 import { Location } from 'history';
 import { combineReader } from '@devexperts/utils/dist/adt/reader.utils';
 import { getActive, getCompleted, Tasks } from '../../model/tasks.model';
+import { mergeArray } from '@most/core';
 
 type Props = {
 	location: Location;
@@ -52,7 +52,7 @@ export const TaskList = combineReader(Footer, Footer => (props: Streamify<Props>
 		</div>
 	));
 
-	const value = xs.merge(main.value, header.value, footer.value);
+	const value = mergeArray([main.value, header.value, footer.value]);
 
 	return {
 		vdom,

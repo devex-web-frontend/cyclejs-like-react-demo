@@ -2,10 +2,10 @@ import { K, Streamify, reduce, TargetKeyboardEvent, createHandler } from '../../
 import * as React from 'react';
 import cx from 'classnames';
 import { ChangeEvent, createRef, FocusEvent, MouseEvent } from 'react';
-import { constVoid } from 'fp-ts/lib/function';
-import xs from 'xstream';
-import sampleCombine from 'xstream/extra/sampleCombine';
+import { compose, constant, constVoid } from 'fp-ts/lib/function';
 import { setCompleted, setEditing, setTitle, TaskValue } from '../../model/task.model';
+import { filter, map, merge, snapshot } from '@most/core';
+import { pipe } from 'fp-ts/lib/pipeable';
 
 const ESC_KEY = 27;
 const ENTER_KEY = 13;
@@ -23,7 +23,7 @@ export const Task = (props: Streamify<Props>) => {
 	const handleEditBlur = createHandler<FocusEvent<HTMLInputElement>>();
 	const handleEditChange = createHandler<ChangeEvent<HTMLInputElement>>();
 
-	const title = xs.merge(K(handleEditChange, e => e.target.value), K(props.value, value => value.title));
+	const title = merge(K(handleEditChange, e => e.target.value), K(props.value, value => value.title));
 
 	const vdom = K(props.value, title, ({ completed, editing }, title) => {
 		const todoRootClassName = cx('todoRoot', {
@@ -52,19 +52,42 @@ export const Task = (props: Streamify<Props>) => {
 		);
 	});
 
-	const destroy = handleDestroyClick.map(constVoid);
-	const enterKeyUp = handleEditKeyUp.filter(e => e.keyCode === ENTER_KEY);
+	const destroy = pipe(
+		handleDestroyClick,
+		map(constVoid),
+	);
+	const enterKeyUp = pipe(
+		handleEditKeyUp,
+		filter(e => e.keyCode === ENTER_KEY),
+	);
 
 	const value = reduce(
 		props.value,
-		handleTitleDoubleClick.mapTo(setEditing(true)),
-		handleEditKeyUp.filter(e => e.keyCode === ESC_KEY).mapTo(setEditing(true)),
-		handleToggleChange.map(e => e.target.checked).map(setCompleted),
-		xs.merge(enterKeyUp, handleEditBlur).mapTo(setEditing(false)),
-		xs
-			.merge(enterKeyUp, handleEditBlur)
-			.compose(sampleCombine(title))
-			.map(([_, title]) => setTitle(title)),
+		pipe(
+			handleTitleDoubleClick,
+			map(constant(setEditing(true))),
+		),
+		pipe(
+			handleEditKeyUp,
+			filter(e => e.keyCode === ESC_KEY),
+			map(constant(setEditing(true))),
+		),
+		pipe(
+			handleToggleChange,
+			map(e => e.target.checked),
+			map(setCompleted),
+		),
+		pipe(
+			merge(enterKeyUp, handleEditBlur),
+			snapshot(
+				(title, _) =>
+					compose(
+						setEditing(false),
+						setTitle(title),
+					),
+				title,
+			),
+		),
 	);
 
 	return { vdom, value, destroy };
