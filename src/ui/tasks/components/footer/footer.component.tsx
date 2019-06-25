@@ -5,7 +5,7 @@ import { Location } from 'history';
 import { combineReader } from '@devexperts/utils/dist/adt/reader.utils';
 import { LinkContainer } from '../../../ui-kit/containers/link.container';
 import { getActive, Tasks } from '../../model/tasks.model';
-import { pipe } from '../../../../utils/pipe.utils';
+import { pipe } from 'fp-ts/lib/pipeable';
 import { map } from '@most/core';
 
 type Props = {

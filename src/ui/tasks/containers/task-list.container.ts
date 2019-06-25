@@ -9,7 +9,7 @@ import { Tasks } from '../model/tasks.model';
 import { identity } from 'fp-ts/lib/function';
 import { Stream } from '@most/types';
 import { merge, multicast, tap } from '@most/core';
-import { pipe } from '../../../utils/pipe.utils';
+import { pipe } from 'fp-ts/lib/pipeable';
 
 type TaskListContainerContext = {
 	location: Stream<Location>;

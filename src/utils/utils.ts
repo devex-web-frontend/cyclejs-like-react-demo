@@ -27,7 +27,7 @@ import {
 	runEffects,
 	until,
 } from '@most/core';
-import { pipe } from './pipe.utils';
+import { pipe } from 'fp-ts/lib/pipeable';
 import { createAdapter } from '@most/adapter/dist';
 import { newDefaultScheduler } from '@most/scheduler';
 import { hold } from './hold.utils';

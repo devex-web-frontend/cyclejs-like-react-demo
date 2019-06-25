@@ -5,7 +5,7 @@ import { ChangeEvent, createRef, FocusEvent, MouseEvent } from 'react';
 import { compose, constant, constVoid } from 'fp-ts/lib/function';
 import { setCompleted, setEditing, setTitle, TaskValue } from '../../model/task.model';
 import { filter, map, merge, snapshot } from '@most/core';
-import { pipe } from '../../../../utils/pipe.utils';
+import { pipe } from 'fp-ts/lib/pipeable';
 
 const ESC_KEY = 27;
 const ENTER_KEY = 13;

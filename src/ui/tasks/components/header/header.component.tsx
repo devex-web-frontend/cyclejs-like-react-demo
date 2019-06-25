@@ -4,7 +4,7 @@ import { none, some } from 'fp-ts/lib/Option';
 import { Tasks } from '../../model/tasks.model';
 import { createTaskValue } from '../../model/task.model';
 import { filter, map, now } from '@most/core';
-import { pipe } from '../../../../utils/pipe.utils';
+import { pipe } from 'fp-ts/lib/pipeable';
 
 type Props = {
 	tasks: Tasks;

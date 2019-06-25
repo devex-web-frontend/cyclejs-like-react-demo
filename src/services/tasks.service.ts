@@ -4,7 +4,7 @@ import { array, boolean, string, type, TypeOf } from 'io-ts';
 import { filterMap, JSONFromString } from '../utils/utils';
 import { fromEither } from 'fp-ts/lib/Option';
 import { Stream } from '@most/types';
-import { pipe } from '../utils/pipe.utils';
+import { pipe } from 'fp-ts/lib/pipeable';
 import { filter, multicast, startWith } from '@most/core';
 import { StorageEventSource } from '../utils/storage.utils';
 import { hold } from '../utils/hold.utils';

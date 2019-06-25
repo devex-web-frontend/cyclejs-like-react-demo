@@ -3,7 +3,7 @@ import { combineReader } from '@devexperts/utils/dist/adt/reader.utils';
 import { TaskListContainer } from '../../../tasks/containers/task-list.container';
 import { run } from '../../../../utils/utils';
 import { merge, tap } from '@most/core';
-import { pipe } from '../../../../utils/pipe.utils';
+import { pipe } from 'fp-ts/lib/pipeable';
 
 export const App = combineReader(
 	TaskListContainer,

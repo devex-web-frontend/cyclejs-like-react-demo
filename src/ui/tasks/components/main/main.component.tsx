@@ -6,7 +6,7 @@ import { ChangeEvent } from 'react';
 import { areAllCompleted, Tasks, toggleAllCompleted } from '../../model/tasks.model';
 import { TaskValue } from '../../model/task.model';
 import { map, merge } from '@most/core';
-import { pipe } from '../../../../utils/pipe.utils';
+import { pipe } from 'fp-ts/lib/pipeable';
 
 type Props = {
 	tasks: Tasks;
